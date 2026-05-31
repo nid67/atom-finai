@@ -111,7 +111,7 @@ export const scanReceiptAI = async (imageBase64: string): Promise<OCRResult> => 
                     - merchantName: string
                     - amount: number
                     - date: string (YYYY-MM-DD)
-                    - category: string (one of: "Food & Dining", "Shopping", "Transport", "Bills & Utilities", "Entertainment", "Groceries", "Health & Wellness", "Others")
+                    - category: string (one of: "Food & Dining", "Shopping", "Transport", "Bills & Utilities", "Entertainment", "Groceries", "Health & Wellness", "Unexpected Inflow", "Others")
                     - confidenceScore: number`
                   },
                   {

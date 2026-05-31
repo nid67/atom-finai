@@ -49,7 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'coach', label: 'AI Coach', icon: MessageSquareCode, badge: userData?.aiQueriesUsedToday !== undefined ? `${userData.aiQueriesUsedToday}/10` : undefined },
     { id: 'subscriptions', label: 'Subscriptions', icon: BellRing },
     { id: 'share', label: 'Share App', icon: Share2 },
-    { id: 'support', label: 'Support FinAI', icon: HeartHandshake },
+    { id: 'support', label: 'User Guide & Support', icon: HeartHandshake },
     { id: 'feedback', label: 'Feedback & Ideas', icon: MessageSquare },
     { id: 'privacy', label: 'Privacy Policy', icon: Lock },
   ];

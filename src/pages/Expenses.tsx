@@ -54,6 +54,7 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
     "Bills & Utilities",
     "Entertainment",
     "Health & Wellness",
+    "Unexpected Inflow",
     "Others"
   ];
 
@@ -124,17 +125,18 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
   // Submit Manual Expense
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const isUnexpectedInflow = category === 'Unexpected Inflow';
     if (!amount || parseFloat(amount) < 1) {
-      alert("Expense amount must be ₹1 and above.");
+      alert(isUnexpectedInflow ? "Inflow amount must be ₹1 and above." : "Expense amount must be ₹1 and above.");
       return;
     }
     try {
       await addExpense({
         amount: parseFloat(amount),
         category,
-        description,
-        merchantName: merchantName || 'Direct Expense',
-        paymentMethod,
+        description: description || (isUnexpectedInflow ? 'Unexpected cash inflow' : ''),
+        merchantName: isUnexpectedInflow ? 'Unexpected Inflow' : (merchantName || 'Direct Expense'),
+        paymentMethod: isUnexpectedInflow ? 'Cash' : paymentMethod,
         sourceType: 'manual',
         date
       });
@@ -152,17 +154,18 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingExpense) return;
+    const isUnexpectedInflow = category === 'Unexpected Inflow';
     if (!amount || parseFloat(amount) < 1) {
-      alert("Expense amount must be ₹1 and above.");
+      alert(isUnexpectedInflow ? "Inflow amount must be ₹1 and above." : "Expense amount must be ₹1 and above.");
       return;
     }
     try {
       await updateExpense(editingExpense.expenseId, {
         amount: parseFloat(amount),
         category,
-        description,
-        merchantName,
-        paymentMethod,
+        description: description || (isUnexpectedInflow ? 'Unexpected cash inflow' : ''),
+        merchantName: isUnexpectedInflow ? 'Unexpected Inflow' : merchantName,
+        paymentMethod: isUnexpectedInflow ? 'Cash' : paymentMethod,
         date
       });
       setEditingExpense(null);
@@ -432,22 +435,26 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
             >
               <X size={18} />
             </button>
-            <h3 className="text-xl font-bold font-display mb-4">Add Manual Expense</h3>
+            <h3 className="text-xl font-bold font-display mb-4">
+              {category === 'Unexpected Inflow' ? 'Add Unexpected Inflow' : 'Add Manual Expense'}
+            </h3>
 
             <form onSubmit={handleAddSubmit} className="space-y-4 text-xs font-semibold">
-              <div className="space-y-1.5">
-                <label className="text-slate-400">Merchant Name</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Starbucks"
-                  value={merchantName}
-                  onChange={(e) => setMerchantName(e.target.value)}
-                  className={`w-full px-3 py-2 rounded-xl border focus:outline-none focus:ring-1 focus:ring-teal-500 ${
-                    darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
-                  }`}
-                />
-              </div>
+              {category !== 'Unexpected Inflow' && (
+                <div className="space-y-1.5 animate-fade-in">
+                  <label className="text-slate-400">Merchant Name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Starbucks"
+                    value={merchantName}
+                    onChange={(e) => setMerchantName(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-xl border focus:outline-none focus:ring-1 focus:ring-teal-500 ${
+                      darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
+                    }`}
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
@@ -481,7 +488,7 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className={category === 'Unexpected Inflow' ? 'grid grid-cols-1 gap-4 mt-4' : 'grid grid-cols-2 gap-4 mt-4'}>
                 <div className="space-y-1.5">
                   <label className="text-slate-400">Date</label>
                   <input
@@ -496,27 +503,31 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-slate-400">Payment Method</label>
-                  <select
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-xl border focus:outline-none ${
-                      darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
-                    }`}
-                  >
-                    <option value="UPI">UPI</option>
-                    <option value="Card">Card</option>
-                    <option value="Cash">Cash</option>
-                  </select>
-                </div>
+                {category !== 'Unexpected Inflow' && (
+                  <div className="space-y-1.5 animate-fade-in">
+                    <label className="text-slate-400">Payment Method</label>
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      className={`w-full px-3 py-2 rounded-xl border focus:outline-none ${
+                        darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
+                      }`}
+                    >
+                      <option value="UPI">UPI</option>
+                      <option value="Card">Card</option>
+                      <option value="Cash">Cash</option>
+                    </select>
+                  </div>
+                )}
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-slate-400">Description</label>
+              <div className="space-y-1.5 mt-4">
+                <label className="text-slate-400">
+                  {category === 'Unexpected Inflow' ? 'Source / Description' : 'Description'}
+                </label>
                 <input
                   type="text"
-                  placeholder="e.g. Latte coffee"
+                  placeholder={category === 'Unexpected Inflow' ? 'e.g. Allowance from parents or side income' : 'e.g. Latte coffee'}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className={`w-full px-3 py-2 rounded-xl border focus:outline-none ${
@@ -527,9 +538,9 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
 
               <button
                 type="submit"
-                className="w-full py-3 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold rounded-xl transition-all shadow cursor-pointer mt-2"
+                className="w-full py-3 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold rounded-xl transition-all shadow cursor-pointer mt-6"
               >
-                Save Transaction
+                {category === 'Unexpected Inflow' ? 'Save Inflow Record' : 'Save Transaction'}
               </button>
             </form>
           </div>
@@ -548,21 +559,25 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
             >
               <X size={18} />
             </button>
-            <h3 className="text-xl font-bold font-display mb-4">Edit Expense Record</h3>
+            <h3 className="text-xl font-bold font-display mb-4">
+              {category === 'Unexpected Inflow' ? 'Edit Unexpected Inflow' : 'Edit Expense Record'}
+            </h3>
 
             <form onSubmit={handleEditSubmit} className="space-y-4 text-xs font-semibold">
-              <div className="space-y-1.5">
-                <label className="text-slate-400">Merchant Name</label>
-                <input
-                  type="text"
-                  required
-                  value={merchantName}
-                  onChange={(e) => setMerchantName(e.target.value)}
-                  className={`w-full px-3 py-2 rounded-xl border focus:outline-none ${
-                    darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
-                  }`}
-                />
-              </div>
+              {category !== 'Unexpected Inflow' && (
+                <div className="space-y-1.5 animate-fade-in">
+                  <label className="text-slate-400">Merchant Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={merchantName}
+                    onChange={(e) => setMerchantName(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-xl border focus:outline-none ${
+                      darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
+                    }`}
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
@@ -595,7 +610,7 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className={category === 'Unexpected Inflow' ? 'grid grid-cols-1 gap-4' : 'grid grid-cols-2 gap-4'}>
                 <div className="space-y-1.5">
                   <label className="text-slate-400">Date</label>
                   <input
@@ -610,24 +625,28 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-slate-400">Payment Method</label>
-                  <select
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-xl border focus:outline-none ${
-                      darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
-                    }`}
-                  >
-                    <option value="UPI">UPI</option>
-                    <option value="Card">Card</option>
-                    <option value="Cash">Cash</option>
-                  </select>
-                </div>
+                {category !== 'Unexpected Inflow' && (
+                  <div className="space-y-1.5 animate-fade-in">
+                    <label className="text-slate-400">Payment Method</label>
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      className={`w-full px-3 py-2 rounded-xl border focus:outline-none ${
+                        darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
+                      }`}
+                    >
+                      <option value="UPI">UPI</option>
+                      <option value="Card">Card</option>
+                      <option value="Cash">Cash</option>
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-slate-400">Description</label>
+                <label className="text-slate-400">
+                  {category === 'Unexpected Inflow' ? 'Source / Description' : 'Description'}
+                </label>
                 <input
                   type="text"
                   value={description}
@@ -642,7 +661,7 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
                 type="submit"
                 className="w-full py-3 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold rounded-xl transition-all shadow cursor-pointer mt-2"
               >
-                Update Transaction
+                {category === 'Unexpected Inflow' ? 'Update Inflow Record' : 'Update Transaction'}
               </button>
             </form>
           </div>

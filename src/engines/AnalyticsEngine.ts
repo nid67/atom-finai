@@ -137,9 +137,24 @@ export class AnalyticsEngine {
       return month === prevMonth && year === prevYear;
     });
 
+    // Separate regular expenses from unexpected inflows
+    const curUnexpectedInflows = curExpenses.filter(e => e.category === 'Unexpected Inflow');
+    const curRealExpenses = curExpenses.filter(e => e.category !== 'Unexpected Inflow');
+
+    const prevUnexpectedInflows = prevExpenses.filter(e => e.category === 'Unexpected Inflow');
+    const prevRealExpenses = prevExpenses.filter(e => e.category !== 'Unexpected Inflow');
+
+    // Sum inflows
+    const curInflowSum = curUnexpectedInflows.reduce((sum, e) => sum + e.amount, 0);
+    const prevInflowSum = prevUnexpectedInflows.reduce((sum, e) => sum + e.amount, 0);
+
+    // Effective Monthly Income
+    const curEffectiveIncome = income + curInflowSum;
+    const prevEffectiveIncome = income + prevInflowSum;
+
     // 1. Calculate Spent
-    const currentMonthSpent = curExpenses.reduce((sum, e) => sum + e.amount, 0);
-    const prevMonthSpent = prevExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const currentMonthSpent = curRealExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const prevMonthSpent = prevRealExpenses.reduce((sum, e) => sum + e.amount, 0);
 
     // 2. MOM change
     let momChangeSpentPercent = 0;
@@ -148,19 +163,19 @@ export class AnalyticsEngine {
     }
 
     // 3. Savings Rate
-    const totalSaved = Math.max(0, income - currentMonthSpent);
-    const savingsRate = income > 0 ? (totalSaved / income) * 100 : 0;
+    const totalSaved = Math.max(0, curEffectiveIncome - currentMonthSpent);
+    const savingsRate = curEffectiveIncome > 0 ? (totalSaved / curEffectiveIncome) * 100 : 0;
 
     // 4. Category breakdown current month
     const categorySpending: { [category: string]: number } = {};
-    curExpenses.forEach(e => {
+    curRealExpenses.forEach(e => {
       const cat = e.category || 'Uncategorized';
       categorySpending[cat] = (categorySpending[cat] || 0) + e.amount;
     });
 
     // 5. Category breakdown previous month
     const prevCategorySpending: { [category: string]: number } = {};
-    prevExpenses.forEach(e => {
+    prevRealExpenses.forEach(e => {
       const cat = e.category || 'Uncategorized';
       prevCategorySpending[cat] = (prevCategorySpending[cat] || 0) + e.amount;
     });

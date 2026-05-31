@@ -123,7 +123,7 @@ export const AICoach: React.FC<AICoachProps> = ({ darkMode = true }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: 'coach',
-      text: `Hello ${userData?.fullName || 'there'}! I am your Atom FinAI Personal Coach. Mapped from your Spending Personality as a **${profile?.personality || 'Balanced Planner'}**, I am here to help you build financial discipline and optimize your savings. Ask me complex financial reasoning questions like "Can I buy a bike?" or "How can I cut down on my over-budget categories?"`,
+      text: `Hello ${userData?.fullName || 'there'}! I am Atom, your personal FinAI coach. Mapped from your Spending Personality as a **${profile?.personality || 'Balanced Planner'}**, I am here to help you build financial discipline and optimize your savings. Ask me complex financial reasoning questions like "Can I buy a bike?" or "How can I cut down on my over-budget categories?"`,
       timestamp: new Date()
     }
   ]);

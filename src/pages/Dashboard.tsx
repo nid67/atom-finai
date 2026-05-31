@@ -18,13 +18,27 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({ darkMode = true }) => {
   const { userData } = useAuth();
-  const { profile, analytics, alerts, suggestions } = useFinance();
+  const { profile, analytics, alerts, suggestions, expenses } = useFinance();
 
   const income = userData?.monthlyIncome || 0;
   const currency = userData?.preferredCurrency || '₹';
 
+  // Calculate unexpected inflows for the current month
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
+  const unexpectedInflowsSum = (expenses || [])
+    .filter(e => {
+      const d = new Date(e.date);
+      return e.category === 'Unexpected Inflow' && 
+             (d.getMonth() + 1) === currentMonth && 
+             d.getFullYear() === currentYear;
+    })
+    .reduce((sum, e) => sum + e.amount, 0);
+
+  const totalMonthlyInflow = income + unexpectedInflowsSum;
+
   const totalSpent = analytics?.currentMonthSpent || 0;
-  const totalSaved = Math.max(0, income - totalSpent);
+  const totalSaved = Math.max(0, totalMonthlyInflow - totalSpent);
   const savingsRate = analytics?.savingsRate || 0;
 
   // MOM Spent details
@@ -194,8 +208,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ darkMode = true }) => {
           <span className="text-[10px] uppercase text-slate-400 font-bold tracking-widest">
             Monthly Inflow
           </span>
-          <span className="text-2xl font-display font-extrabold tracking-tight mt-1">
-            {currency}{fNum(income)}
+          <span className="text-2xl font-display font-extrabold tracking-tight mt-1 flex flex-col">
+            <span>{currency}{fNum(totalMonthlyInflow)}</span>
+            {unexpectedInflowsSum > 0 && (
+              <span className="text-[9px] text-teal-400 font-bold mt-1 tracking-normal normal-case leading-tight">
+                ⚡ +{currency}{fNum(unexpectedInflowsSum)} unexpected inflow
+              </span>
+            )}
           </span>
         </div>
 

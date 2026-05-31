@@ -27,7 +27,17 @@ export class ProfileEngine {
     isStudent: boolean = false
   ): UserProfileData {
     const now = new Date();
-    const daysRegistered = Math.max(1, Math.ceil((now.getTime() - createdAtDate.getTime()) / (1000 * 60 * 60 * 24)));
+    
+    // Calculate active learning/tracking days (days since oldest expense data)
+    let daysRegistered = 0;
+    if (expenses.length > 0) {
+      const oldestExpenseTime = Math.min(...expenses.map(e => new Date(e.date).getTime()));
+      const oldestExpenseDate = new Date(oldestExpenseTime);
+      daysRegistered = Math.max(1, Math.ceil((now.getTime() - oldestExpenseDate.getTime()) / (1000 * 60 * 60 * 24)));
+    } else if (createdAtDate) {
+      // Reference variable to satisfy compiler and default to 0 active tracking days
+      daysRegistered = 0;
+    }
 
     // 1. Calculate Spent & Savings Rate
     const currentMonth = now.getMonth() + 1;
@@ -37,8 +47,15 @@ export class ProfileEngine {
       return (d.getMonth() + 1) === currentMonth && d.getFullYear() === currentYear;
     });
 
-    const currentSpent = curExpenses.reduce((sum, e) => sum + e.amount, 0);
-    const savingsRate = income > 0 ? ((income - currentSpent) / income) * 100 : 0;
+    // Separate regular expenses from unexpected inflows
+    const curUnexpectedInflows = curExpenses.filter(e => e.category === 'Unexpected Inflow');
+    const curRealExpenses = curExpenses.filter(e => e.category !== 'Unexpected Inflow');
+
+    const curInflowSum = curUnexpectedInflows.reduce((sum, e) => sum + e.amount, 0);
+    const effectiveIncome = income + curInflowSum;
+
+    const currentSpent = curRealExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const savingsRate = effectiveIncome > 0 ? ((effectiveIncome - currentSpent) / effectiveIncome) * 100 : 0;
 
     // 2. Savings Score Component (40 pts)
     let savingsScore = 0;
@@ -155,51 +172,51 @@ export class ProfileEngine {
     if (isStudentProfile) {
       if (savingsRate >= 30 && budgetScore === 30) {
         personality = 'Scholar Saver';
-        strongestHabit = 'Exceptional allowance management and conservative discretionary spending';
-        largestWeakness = 'May limit social integrations and key campus networking opportunities';
+        strongestHabit = 'Saving a lot of your pocket money and not spending on unnecessary things';
+        largestWeakness = 'Spending too little on hobbies, fun activities, or hanging out with friends';
         riskLevel = 'Conservative';
         budgetDiscipline = 'Exceptional';
       } else if (savingsRate >= 15) {
         personality = 'Balanced Academic';
-        strongestHabit = 'Steady balance between study materials, personal comfort, and savings';
-        largestWeakness = 'Vulnerable to sudden mid-semester expense spikes';
+        strongestHabit = 'Good balance between buying study materials, having fun, and saving pocket money';
+        largestWeakness = 'Sudden extra expenses like books or trips might throw off your budget';
         riskLevel = 'Moderate';
         budgetDiscipline = 'Stable';
       } else {
         personality = 'Lifestyle Scholar';
-        strongestHabit = 'Highly active in campus social circles and peer experiences';
-        largestWeakness = 'High reliance on emergency parental infusions; low savings cushion';
+        strongestHabit = 'Enjoying your college life and socializing with friends';
+        largestWeakness = 'Saving very little pocket money; might need to ask parents for extra cash often';
         riskLevel = 'Aggressive';
-        budgetDiscipline = 'Critical Attention Required';
+        budgetDiscipline = 'Needs Attention';
       }
     } else if (savingsRate >= 35 && budgetScore === 30) {
       personality = 'Smart Saver';
-      strongestHabit = 'High saving rate and solid budget adherence';
-      largestWeakness = 'Potential underspending on high-value life experiences';
+      strongestHabit = 'Great at saving and always staying inside your budget limits';
+      largestWeakness = 'Focusing so much on saving that you miss out on enjoying life experiences';
       riskLevel = 'Conservative';
       budgetDiscipline = 'Exceptional';
     } else if (savingsRate >= 25 && goals.length > 0 && goalScore >= 15) {
       personality = 'Future Investor';
-      strongestHabit = 'Consistent savings connected directly to long-term goals';
-      largestWeakness = 'May lack liquidity due to long-term locks';
+      strongestHabit = 'Saving consistently to reach your future goals';
+      largestWeakness = 'Locking up too much money, leaving you with little cash for daily needs';
       riskLevel = 'Aggressive';
       goalCommitment = 'Excellent';
     } else if (isEntertainmentHeavy && savingsRate < 15) {
       personality = 'Experience Seeker';
-      strongestHabit = 'Invests in memorable personal experiences';
-      largestWeakness = 'Lifestyle inflation could compromise safety reserves';
+      strongestHabit = 'Willing to spend on great memories and life experiences';
+      largestWeakness = 'Spending too much on fun, which can leave you without any emergency savings';
       riskLevel = 'Moderate';
       budgetDiscipline = 'Needs improvement';
     } else if (savingsRate < 10 || budgetScore === 0) {
       personality = 'Impulse Buyer';
-      strongestHabit = 'Drives commerce but struggles with reserves';
-      largestWeakness = 'Susceptible to micro-expense accumulation and emotional shopping';
+      strongestHabit = 'Enjoys shopping, but struggles to save for the future';
+      largestWeakness = 'Spending small amounts frequently on emotional or sudden purchases';
       riskLevel = 'Aggressive';
-      budgetDiscipline = 'Critical Attention Required';
+      budgetDiscipline = 'Needs Attention';
     } else {
       personality = 'Balanced Planner';
-      strongestHabit = 'Sustains structural balance between spending and savings';
-      largestWeakness = 'Needs automated rule enforcement for optimal acceleration';
+      strongestHabit = 'Keeping a healthy balance between your spending and savings';
+      largestWeakness = 'Could benefit from automated savings to reach your goals faster';
       riskLevel = 'Moderate';
     }
 

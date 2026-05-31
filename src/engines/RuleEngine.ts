@@ -33,19 +33,19 @@ export class RuleEngine {
             id: `budget_alert_${b.category}`,
             type: 'alert',
             title: `Budget Exceeded`,
-            message: `You are over budget in ${b.category} by ${b.spentAmount - b.monthlyLimit} ${b.remainingAmount < 0 ? 'units' : ''}. (Limit: ${b.monthlyLimit}, Spent: ${b.spentAmount})`,
+            message: `You spent more than your limit for ${b.category} by ${b.spentAmount - b.monthlyLimit}! (Limit: ${b.monthlyLimit}, Spent: ${b.spentAmount})`,
             category: b.category
           });
-          suggestions.push(`Immediately freeze non-essential purchases in ${b.category} to contain the overage.`);
+          suggestions.push(`Try to stop spending on ${b.category} for the rest of this month.`);
         } else if (ratio >= 0.85) {
           alerts.push({
             id: `budget_warn_${b.category}`,
             type: 'warning',
             title: `Budget Warning`,
-            message: `${b.category} budget is at ${Math.round(ratio * 100)}% capacity. Only ${b.monthlyLimit - b.spentAmount} remaining.`,
+            message: `You have used ${Math.round(ratio * 100)}% of your ${b.category} budget. You only have ${b.monthlyLimit - b.spentAmount} left.`,
             category: b.category
           });
-          suggestions.push(`Consider deferring discretionary items in ${b.category} until next month.`);
+          suggestions.push(`Try to wait until next month before buying more things in ${b.category}.`);
         }
       }
     });
@@ -55,25 +55,25 @@ export class RuleEngine {
       alerts.push({
         id: 'savings_critical',
         type: 'alert',
-        title: 'Deficit Alert',
-        message: `Your spending this month exceeds your monthly income! Deficit is at ${Math.abs(Math.round(savingsRate))}% of income.`
+        title: 'Overspending Alert',
+        message: `You have spent more than you earned this month! You spent ${Math.abs(Math.round(savingsRate))}% more than your income.`
       });
-      suggestions.push("Audit recent transaction records to isolate and pause recurring non-essential expenses.");
-      suggestions.push("Establish an automated 10% safety cushion transfer at the start of your next income cycle.");
+      suggestions.push("Take a quick look at your recent expenses and pause things you don't really need.");
+      suggestions.push("Try setting aside 10% of your pocket money at the start of next month before you begin spending.");
     } else if (savingsRate < 15) {
       alerts.push({
         id: 'savings_warning',
         type: 'warning',
         title: 'Low Savings Rate',
-        message: `Savings rate is currently at ${Math.round(savingsRate)}%. Premium target is 25%+ for optimal security.`
+        message: `You saved ${Math.round(savingsRate)}% of your income this month. Try to aim for 20% or more to build a nice cushion!`
       });
-      suggestions.push("Identify micro-spending patterns (dining, subscriptions) that are eroding your savings potential.");
+      suggestions.push("Look out for small expenses like dining out or subscriptions that can add up quickly.");
     } else {
       alerts.push({
         id: 'savings_success',
         type: 'success',
         title: 'Healthy Savings',
-        message: `Excellent savings performance! You are saving ${Math.round(savingsRate)}% of your income.`
+        message: `Awesome job! You saved ${Math.round(savingsRate)}% of your money this month. Keep it up!`
       });
     }
 
@@ -91,10 +91,10 @@ export class RuleEngine {
             alerts.push({
               id: `goal_deadline_${g.goalId}`,
               type: 'warning',
-              title: `Milestone Nearing`,
-              message: `Goal "${g.goalName}" is due in ${diffDays} days. You are at ${Math.round(progressPercent)}% and need to save ${remainingToSave} more.`
+              title: `Goal Deadline Nearing`,
+              message: `Your goal "${g.goalName}" is ending in ${diffDays} days! You are at ${Math.round(progressPercent)}% and need to save ${remainingToSave} more to reach it.`,
             });
-            suggestions.push(`Redirect discretionary funds to close the remaining gap for your "${g.goalName}" milestone.`);
+            suggestions.push(`Put a little extra money towards your "${g.goalName}" goal this week to help reach it on time.`);
           }
         }
       }
@@ -107,14 +107,14 @@ export class RuleEngine {
     const curSpent = expenses
       .filter(e => {
         const d = new Date(e.date);
-        return (d.getMonth() + 1) === currentMonth && d.getFullYear() === currentYear;
+        return (d.getMonth() + 1) === currentMonth && d.getFullYear() === currentYear && e.category !== 'Unexpected Inflow';
       })
       .reduce((sum, e) => sum + e.amount, 0);
 
     const prevSpent = expenses
       .filter(e => {
         const d = new Date(e.date);
-        return (d.getMonth() + 1) === prevMonth && d.getFullYear() === prevYear;
+        return (d.getMonth() + 1) === prevMonth && d.getFullYear() === prevYear && e.category !== 'Unexpected Inflow';
       })
       .reduce((sum, e) => sum + e.amount, 0);
 
@@ -124,17 +124,17 @@ export class RuleEngine {
         alerts.push({
           id: 'spending_volatility',
           type: 'alert',
-          title: 'Volatility Warning',
-          message: `Your spending spiked by ${Math.round(growth)}% this month compared to last month!`
+          title: 'Spending Spike Warning',
+          message: `You spent ${Math.round(growth)}% more this month compared to last month!`
         });
-        suggestions.push("Check if this is a one-time essential purchase or a structural drift in regular spending habits.");
+        suggestions.push("Think if this extra spending was for a one-time emergency or if you are spending more on daily things.");
       }
     }
 
     // Default suggestions if list is empty
     if (suggestions.length === 0) {
-      suggestions.push("Great job! Keep sustaining your present budget parameters and savings disciplines.");
-      suggestions.push("Explore micro-investment buckets to accelerate growth on your idle savings reserves.");
+      suggestions.push("Great job! Keep staying within your budgets and saving money.");
+      suggestions.push("Consider putting some of your extra savings into a piggy bank or low-risk savings account.");
     }
 
     return {

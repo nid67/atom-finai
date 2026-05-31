@@ -1,66 +1,132 @@
-import { Heart, Hourglass } from 'lucide-react';
+import React from 'react';
+import { useAuth } from '../context/AuthContext';
+import { BookOpen, Sparkles, Zap, MessageSquare, Hourglass } from 'lucide-react';
 
 interface SupportProps {
   darkMode?: boolean;
 }
 
 export const Support: React.FC<SupportProps> = ({ darkMode = true }) => {
+  const { userData } = useAuth();
+  
+  const isStudent = userData?.isStudent || 
+                    (userData?.occupation || '').toLowerCase().includes('student') || 
+                    (userData?.occupation || '').toLowerCase().includes('college') || 
+                    (userData?.occupation || '').toLowerCase().includes('university') || 
+                    (userData?.occupation || '').toLowerCase().includes('school');
+
   return (
-    <div className="space-y-6 max-w-4xl mx-auto py-8">
-      {/* Dynamic ambient lights */}
-      <div className="absolute top-1/4 left-1/4 w-[35rem] h-[35rem] rounded-full bg-rose-500/5 blur-3xl pointer-events-none select-none animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-[35rem] h-[35rem] rounded-full bg-purple-500/5 blur-3xl pointer-events-none select-none" />
+    <div className="space-y-8 max-w-4xl mx-auto py-4">
+      {/* Ambient glowing gradient highlights */}
+      <div className="absolute top-1/4 left-1/4 w-[35rem] h-[35rem] rounded-full bg-teal-500/5 blur-3xl pointer-events-none select-none animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 w-[35rem] h-[35rem] rounded-full bg-cyan-500/5 blur-3xl pointer-events-none select-none" />
 
-      {/* Hero Badge */}
-      <div className="text-center space-y-4">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-500/15 to-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto mb-6 animate-float-slow shadow-lg shadow-rose-500/5">
-          <Heart size={32} className="fill-rose-500/20" />
-        </div>
-        
-        <h2 className="text-3xl md:text-4xl font-display font-extrabold tracking-tight m-0 bg-gradient-to-r from-purple-400 via-rose-450 to-pink-400 bg-clip-text text-transparent">
-          Direct Support FinAI
+      {/* Header section */}
+      <div>
+        <h2 className="text-3xl font-display font-extrabold tracking-tight m-0 bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+          User Guide & Support Hub
         </h2>
+        <p className="text-sm text-slate-400 mt-1.5 m-0 font-medium">
+          Learn how to maximize your financial intelligence and use Atom FinAI for the best experience.
+        </p>
+      </div>
+
+      {/* Interactive Quick Help / Guide Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 text-[10px] uppercase font-bold tracking-widest bg-rose-500/10 text-rose-450 border border-rose-500/20 rounded-full">
-          <Hourglass size={12} className="animate-spin text-rose-400" />
-          <span>Undergoing Upgrade</span>
-        </span>
-      </div>
-
-      {/* Info Card Container */}
-      <div className={`p-8 md:p-12 rounded-3xl border text-center space-y-6 max-w-2xl mx-auto relative overflow-hidden transition-all duration-350 hover:scale-[1.005] ${
-        darkMode ? 'glass-panel-dark border-slate-800 shadow-2xl' : 'glass-panel-light border-slate-200'
-      }`}>
-        <div className="space-y-3 font-semibold">
-          <h3 className="text-xl font-bold font-display m-0 text-slate-100">
-            Premium Support Portal Coming Soon!
-          </h3>
-          <p className="text-xs text-slate-400 leading-relaxed max-w-md mx-auto m-0 font-medium">
-            We are overhauling our secure payment routing and direct UPI integrations to institute advanced multi-currency support, tax compliance, and instant tier activations.
+        {/* Card 1: Adding Inflows (Income) */}
+        <div className={`p-6 rounded-2xl border relative overflow-hidden transition-all duration-300 hover:scale-[1.01] hover:border-teal-500/30 ${
+          darkMode ? 'glass-panel-dark border-slate-800' : 'glass-panel-light border-slate-200'
+        }`}>
+          <div className="w-10 h-10 rounded-xl bg-teal-500/10 text-teal-400 flex items-center justify-center mb-4">
+            <Zap size={20} />
+          </div>
+          <h3 className="text-lg font-bold font-display m-0 text-slate-200">How to Log Unexpected Inflows</h3>
+          <p className="text-xs text-slate-400 mt-2 leading-relaxed font-medium">
+            Keep track of side income, cash gifts, or pocket allowance from parents easily:
           </p>
+          <ul className="text-xs text-slate-350 space-y-2 pl-4 list-disc font-semibold mt-3">
+            <li>Go to the <span className="text-teal-400">Expenses</span> page.</li>
+            <li>Click on <span className="text-teal-400">Add Expense</span>.</li>
+            <li>In the Category dropdown, select <span className="text-teal-400">Unexpected Inflow</span>.</li>
+            <li>The form will instantly simplify to only collect the Amount, Date, and Source Description!</li>
+          </ul>
+          <span className="text-[10px] text-teal-400 font-bold block mt-4 bg-teal-500/10 px-2.5 py-1 rounded-lg w-max">
+            💡 Added directly to your Monthly Inflow!
+          </span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/60 text-xs text-left leading-relaxed space-y-3 font-semibold max-w-md mx-auto">
-          <div className="flex gap-2">
-            <span className="text-teal-400 text-sm leading-none">•</span>
-            <p className="m-0 text-slate-350 font-medium">
-              **100% Secure**: Upgrading from direct UPI strings to formal bank-level stripe and institutional checkouts.
+        {/* Card 2: Getting the Best Experience */}
+        <div className={`p-6 rounded-2xl border relative overflow-hidden transition-all duration-300 hover:scale-[1.01] hover:border-cyan-500/30 ${
+          darkMode ? 'glass-panel-dark border-slate-800' : 'glass-panel-light border-slate-200'
+        }`}>
+          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center mb-4">
+            <Sparkles size={20} />
+          </div>
+          <h3 className="text-lg font-bold font-display m-0 text-slate-200">Tips for the Best Experience</h3>
+          <p className="text-xs text-slate-400 mt-2 leading-relaxed font-medium">
+            Follow these essential guidelines to let Atom give you hyper-personalized strategic coaching:
+          </p>
+          <ul className="text-xs text-slate-350 space-y-2 pl-4 list-disc font-semibold mt-3">
+            <li><span className="text-cyan-400">Add daily expenses</span>: Consistency ensures accurate habit and weakness tracking.</li>
+            <li><span className="text-cyan-400">Track for 21 Active Days</span>: The AI needs 21 calendar days of expense data to construct your Spending Personality.</li>
+            <li><span className="text-cyan-400">Define realistic goals</span>: Set milestones in Settings to guide your savings advisor.</li>
+          </ul>
+        </div>
+
+        {/* Card 3: Behavioral Profiles */}
+        <div className={`p-6 rounded-2xl border relative overflow-hidden transition-all duration-300 hover:scale-[1.01] ${
+          darkMode ? 'glass-panel-dark border-slate-800' : 'glass-panel-light border-slate-200'
+        }`}>
+          <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center mb-4">
+            <BookOpen size={20} />
+          </div>
+          <h3 className="text-lg font-bold font-display m-0 text-slate-200">Understanding Your Profile</h3>
+          <p className="text-xs text-slate-400 mt-2 leading-relaxed font-medium">
+            {isStudent 
+              ? "Based on your student status, Atom evaluates you using hyper-focused student spending classes:" 
+              : "Based on your professional profile, Atom evaluates you using strategic wealth-building spending classes:"}
+          </p>
+          <div className="grid grid-cols-2 gap-2 mt-4 text-[10px] text-slate-400 font-bold">
+            {isStudent ? (
+              <>
+                <span className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/40 text-center">🎓 Scholar Saver</span>
+                <span className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/40 text-center">⚖️ Balanced Academic</span>
+                <span className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/40 text-center">🛍️ Lifestyle Scholar</span>
+                <span className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/40 text-center">💼 Smart Saver</span>
+              </>
+            ) : (
+              <>
+                <span className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/40 text-center">💼 Smart Saver</span>
+                <span className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/40 text-center">📈 Future Investor</span>
+                <span className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/40 text-center">🌟 Experience Seeker</span>
+                <span className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/40 text-center">🛍️ Impulse Buyer</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Card 4: Direct Ticket Support (Coming Soon) */}
+        <div className={`p-6 rounded-2xl border relative overflow-hidden flex flex-col justify-between transition-all duration-300 hover:scale-[1.01] ${
+          darkMode ? 'glass-panel-dark border-slate-800' : 'glass-panel-light border-slate-200'
+        }`}>
+          <div>
+            <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-450 flex items-center justify-center mb-4 animate-pulse">
+              <MessageSquare size={20} className="text-rose-400" />
+            </div>
+            <h3 className="text-lg font-bold font-display m-0 text-slate-200">Premium Ticket Support</h3>
+            <p className="text-xs text-slate-400 mt-2 leading-relaxed font-medium">
+              We are currently overhauling our secure ticketing dashboard and direct coach chat channels to support instant resolution times.
             </p>
           </div>
-          <div className="flex gap-2">
-            <span className="text-teal-400 text-sm leading-none">•</span>
-            <p className="m-0 text-slate-350 font-medium">
-              **Tier Benefits**: Earn premium badges, unlimited daily AI consultations, and custom financial forecasting graphs.
-            </p>
+          <div className="flex items-center gap-2 text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-3 py-1 rounded-xl w-max mt-4">
+            <Hourglass size={10} className="animate-spin" />
+            <span>Direct Support Coming Soon!</span>
           </div>
         </div>
 
-        <div className="border-t border-slate-800/40 pt-6 space-y-4 max-w-md mx-auto">
-          <p className="text-[11px] text-slate-500 font-bold m-0 leading-relaxed">
-            In the meantime, we value your feedback! If there are custom features or specific subscription perks you want us to add, let us know!
-          </p>
-        </div>
       </div>
+
     </div>
   );
 };

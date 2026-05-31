@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useFinance } from '../context/FinanceContext';
 import { X, Save, Sliders, CheckCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -15,6 +16,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   darkMode = true 
 }) => {
   const { userData, updateOnboarding } = useAuth();
+  const { expenses, updateExpense } = useFinance();
   
   // Base State Declarations
   const [fullName, setFullName] = useState('');
@@ -133,6 +135,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     parentFundingInterval === 'irregular' ? 'When parents have money' : '',
         createdAt: new Date(createdAt)
       });
+
+      // To support visual simulator perfectly: if they simulated their registration date in the past,
+      // we also backdate their oldest expense to match the simulated date so they instantly get 21 days of active tracking data!
+      if (expenses.length > 0) {
+        const oldestExpense = expenses.reduce((oldest, current) => {
+          return new Date(current.date).getTime() < new Date(oldest.date).getTime() ? current : oldest;
+        }, expenses[0]);
+        
+        if (oldestExpense.date !== createdAt) {
+          await updateExpense(oldestExpense.expenseId, {
+            date: createdAt
+          });
+        }
+      }
 
       setSuccess(true);
       confetti({
