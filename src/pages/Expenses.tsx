@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useFinance } from '../context/FinanceContext';
-import { scanReceiptAI } from '../services/ai';
+// import { scanReceiptAI } from '../services/ai';
 import type { Expense } from '../engines/AnalyticsEngine';
 import { 
   Plus, 
@@ -12,7 +12,6 @@ import {
   X, 
   Camera, 
   Check, 
-  RefreshCw,
   Sparkles
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -41,9 +40,11 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Receipt Scanner States
-  const [scanning, setScanning] = useState(false);
-  const [scanResult, setScanResult] = useState<any | null>(null);
-  const [deleteReceiptAfter, setDeleteReceiptAfter] = useState(true);
+  const [isScannerUpcomingOpen, setIsScannerUpcomingOpen] = useState(false);
+  // Temporarily commented out for OCR scanner upcoming feature transition
+  // const [scanning, setScanning] = useState(false);
+  // const [scanResult, setScanResult] = useState<any | null>(null);
+  // const [deleteReceiptAfter, setDeleteReceiptAfter] = useState(true);
 
   // Available Categories
   const categories = [
@@ -58,7 +59,8 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
     "Others"
   ];
 
-  // OCR Receipt Scan Action
+  // OCR Receipt Scan Action (Temporarily disabled for upcoming feature transition)
+  /*
   const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -89,8 +91,10 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
       setScanning(false);
     }
   };
+  */
 
   // Confirm OCR Receipt Save
+  /*
   const handleConfirmScan = async () => {
     if (!scanResult) return;
     try {
@@ -121,6 +125,7 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
       console.error(err);
     }
   };
+  */
 
   // Submit Manual Expense
   const handleAddSubmit = async (e: React.FormEvent) => {
@@ -210,26 +215,14 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
         {/* Buttons Strip */}
         <div className="flex gap-3">
           {/* AI Scan Trigger */}
-          <label className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 border border-teal-500/30 text-teal-400 hover:bg-teal-500/20 text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer hover:scale-105">
-            {scanning ? (
-              <>
-                <RefreshCw size={14} className="animate-spin" />
-                <span>Extracting fields...</span>
-              </>
-            ) : (
-              <>
-                <Camera size={14} />
-                <span>Scan Receipt</span>
-              </>
-            )}
-            <input 
-              type="file" 
-              accept="image/*" 
-              onChange={handleReceiptUpload} 
-              disabled={scanning} 
-              className="hidden" 
-            />
-          </label>
+          <button
+            onClick={() => setIsScannerUpcomingOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 border border-teal-500/30 text-teal-400 hover:bg-teal-500/20 text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer hover:scale-105 animate-pulse-slow"
+          >
+            <Camera size={14} />
+            <span>Scan Receipt</span>
+            <span className="text-[8px] bg-teal-500/20 text-teal-450 px-1 py-0.5 rounded font-extrabold uppercase tracking-wider ml-1">AI</span>
+          </button>
 
           {/* Manual Add Button */}
           <button
@@ -668,113 +661,125 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
         </div>
       )}
 
-      {/* --- RECEIPT PREVIEW REVIEW EDITABLE MODAL (OCR) --- */}
+      {/* --- RECEIPT PREVIEW REVIEW EDITABLE MODAL (OCR) (Disabled) --- */}
+      {/*
       {scanResult && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className={`w-full max-w-md rounded-2xl border p-6 relative ${
-            darkMode ? 'glass-panel-dark border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'
+          ...
+        </div>
+      )}
+      */}
+
+      {/* --- UPCOMING RECEIPT SCANNER MODAL --- */}
+      {isScannerUpcomingOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+          {/* Outer glow background */}
+          <div className="absolute w-[300px] h-[300px] bg-teal-500/10 rounded-full blur-[120px] pointer-events-none" />
+          
+          <div className={`w-full max-w-md rounded-2xl border p-6 relative overflow-hidden transition-all duration-300 ${
+            darkMode 
+              ? 'glass-panel-dark border-slate-800 text-slate-100' 
+              : 'bg-white border-slate-200 text-slate-800'
           }`}>
+            {/* Top gradient strip */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
+
             <button 
-              onClick={() => setScanResult(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 cursor-pointer"
+              onClick={() => setIsScannerUpcomingOpen(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-205 cursor-pointer transition-colors"
             >
               <X size={18} />
             </button>
-            
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-purple-500/10 text-purple-400 rounded-lg flex items-center justify-center">
-                <Sparkles size={16} />
-              </div>
-              <h3 className="text-xl font-bold font-display m-0">Confirm Parsed Receipt</h3>
-            </div>
 
-            <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800 flex justify-between items-center text-xs mb-4">
-              <span className="text-slate-400">OCR Extraction Confidence</span>
-              <span className={`font-bold px-2 py-0.5 rounded ${
-                scanResult.confidenceScore >= 75 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'
-              }`}>
-                {scanResult.confidenceScore}%
+            {/* Icon & Title */}
+            <div className="flex flex-col items-center text-center mt-4 mb-6">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500/20 to-teal-500/20 border border-teal-500/30 flex items-center justify-center mb-4 relative shadow-lg shadow-teal-500/5 hover:scale-110 transition-transform duration-300">
+                <Camera size={28} className="text-teal-400" />
+                <Sparkles size={14} className="text-emerald-400 absolute top-2 right-2 animate-pulse" />
+              </div>
+              <span className="text-[10px] font-extrabold tracking-widest text-teal-400 uppercase bg-teal-500/10 px-2.5 py-1 rounded-full border border-teal-500/20 mb-2">
+                Upcoming Feature
               </span>
+              <h3 className="text-2xl font-extrabold font-display tracking-tight text-slate-100 m-0">
+                Smart AI Receipt Scanner
+              </h3>
+              <p className="text-xs text-slate-400 mt-2 max-w-xs leading-relaxed">
+                We are perfecting our next-generation optical character recognition models to parse your paper receipts in milliseconds.
+              </p>
             </div>
 
-            <form className="space-y-4 text-xs font-semibold">
-              <div className="space-y-1.5">
-                <label className="text-slate-400">Extracted Merchant</label>
-                <input
-                  type="text"
-                  value={scanResult.merchantName}
-                  onChange={(e) => setScanResult({ ...scanResult, merchantName: e.target.value })}
-                  className={`w-full px-3 py-2 rounded-xl border focus:outline-none ${
-                    darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
-                  }`}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-slate-400">Amount ({currency})</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={scanResult.amount}
-                    onChange={(e) => setScanResult({ ...scanResult, amount: e.target.value })}
-                    className={`w-full px-3 py-2 rounded-xl border focus:outline-none ${
-                      darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
-                    }`}
-                  />
+            {/* Feature Highlights Grid */}
+            <div className="space-y-3 mb-6">
+              <div className={`p-3 rounded-xl border flex gap-3 items-start transition-all ${
+                darkMode ? 'bg-slate-950/40 border-slate-800/80 hover:border-slate-800' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <Check size={12} className="text-emerald-400" />
                 </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-slate-400">Category</label>
-                  <select
-                    value={scanResult.category}
-                    onChange={(e) => setScanResult({ ...scanResult, category: e.target.value })}
-                    className={`w-full px-3 py-2 rounded-xl border focus:outline-none ${
-                      darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
-                    }`}
-                  >
-                    {categories.map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-200">100% Automated Logging</h4>
+                  <p className="text-[10px] text-slate-455 mt-0.5 leading-relaxed">
+                    AI instantly extracts merchant, date, payment method, and exact final amount.
+                  </p>
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-slate-400">Transaction Date</label>
-                <input
-                  type="date"
-                  value={scanResult.date}
-                  onChange={(e) => setScanResult({ ...scanResult, date: e.target.value })}
-                  style={{ colorScheme: darkMode ? 'dark' : 'light' }}
-                  className={`w-full px-3 py-2 rounded-xl border focus:outline-none ${
-                    darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
-                  }`}
-                />
+              <div className={`p-3 rounded-xl border flex gap-3 items-start transition-all ${
+                darkMode ? 'bg-slate-950/40 border-slate-800/80 hover:border-slate-800' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <div className="w-6 h-6 rounded-lg bg-teal-500/10 border border-teal-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <Check size={12} className="text-teal-400" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-200">Smart LLM Categorization</h4>
+                  <p className="text-[10px] text-slate-455 mt-0.5 leading-relaxed">
+                    Automatically classifies transactions into categories depending on items bought.
+                  </p>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2.5 p-1">
-                <input
-                  type="checkbox"
-                  id="deleteCheck"
-                  checked={deleteReceiptAfter}
-                  onChange={(e) => setDeleteReceiptAfter(e.target.checked)}
-                  className="rounded border-slate-700 bg-slate-950 accent-teal-500 focus:ring-0 focus:ring-offset-0"
-                />
-                <label htmlFor="deleteCheck" className="text-[11px] text-slate-400 select-none cursor-pointer">
-                  Delete scanned receipt image file after confirmation (Privacy recommended)
-                </label>
+              <div className={`p-3 rounded-xl border flex gap-3 items-start transition-all ${
+                darkMode ? 'bg-slate-950/40 border-slate-800/80 hover:border-slate-800' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <div className="w-6 h-6 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <Check size={12} className="text-purple-400" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-200">Privacy-First Auto-Delete</h4>
+                  <p className="text-[10px] text-slate-455 mt-0.5 leading-relaxed">
+                    Scanned image files are safely processed and permanently wiped after confirmation.
+                  </p>
+                </div>
               </div>
+            </div>
 
+            {/* Action Buttons */}
+            <div className="flex gap-3">
               <button
                 type="button"
-                onClick={handleConfirmScan}
-                className="w-full py-3 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-bold rounded-xl transition-all shadow flex items-center justify-center gap-2 cursor-pointer mt-2"
+                onClick={() => {
+                  confetti({
+                    particleCount: 60,
+                    spread: 40,
+                    origin: { y: 0.8 }
+                  });
+                  setIsScannerUpcomingOpen(false);
+                  alert("Awesome! We've registered your interest. Receipt scanning is being built with high priority.");
+                }}
+                className="flex-1 py-3 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 font-bold rounded-xl transition-all shadow hover:scale-[1.02] hover:opacity-90 active:scale-95 cursor-pointer text-center"
               >
-                <Check size={16} />
-                <span>Confirm & Log Expense</span>
+                Notify Me!
               </button>
-            </form>
+              <button
+                type="button"
+                onClick={() => setIsScannerUpcomingOpen(false)}
+                className={`px-4 py-3 border rounded-xl font-bold transition-all hover:bg-slate-800/20 cursor-pointer ${
+                  darkMode ? 'border-slate-800 text-slate-400 hover:text-slate-200' : 'border-slate-200 text-slate-600'
+                }`}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
