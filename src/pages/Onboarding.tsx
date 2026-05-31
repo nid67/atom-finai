@@ -17,6 +17,12 @@ export const Onboarding: React.FC<OnboardingProps> = ({ darkMode = true }) => {
   const [preferredCurrency, setPreferredCurrency] = useState('₹');
   const [financialGoal, setFinancialGoal] = useState('');
 
+  // Student specific funding parameters
+  const [isStudent, setIsStudent] = useState(false);
+  const [studentFundingSource, setStudentFundingSource] = useState<'earn' | 'parents' | 'both' | ''>('');
+  const [parentFundingInterval, setParentFundingInterval] = useState<'daily' | 'weekly' | 'monthly' | 'irregular' | ''>('');
+  const [parentFundingAmount, setParentFundingAmount] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -25,9 +31,29 @@ export const Onboarding: React.FC<OnboardingProps> = ({ darkMode = true }) => {
       setError('Please provide your name.');
       return;
     }
-    if (step === 2 && (!occupation.trim() || !monthlyIncome || parseFloat(monthlyIncome) <= 0)) {
-      setError('Please enter your occupation and a valid monthly income.');
-      return;
+    if (step === 2) {
+      if (!occupation.trim()) {
+        setError('Please enter your occupation.');
+        return;
+      }
+      if (isStudent && !studentFundingSource) {
+        setError('Please specify whether you earn income or receive allowance.');
+        return;
+      }
+      if (isStudent && (studentFundingSource === 'parents' || studentFundingSource === 'both')) {
+        if (!parentFundingInterval) {
+          setError('Please select how frequently you receive money from your parents.');
+          return;
+        }
+        if (!parentFundingAmount || parseFloat(parentFundingAmount) <= 0) {
+          setError('Please enter a valid allowance amount.');
+          return;
+        }
+      }
+      if (!monthlyIncome || parseFloat(monthlyIncome) <= 0) {
+        setError('Please enter a valid monthly income equivalent.');
+        return;
+      }
     }
     if (step === 3 && !financialGoal.trim()) {
       setError('Please state your primary financial goal.');
@@ -42,6 +68,40 @@ export const Onboarding: React.FC<OnboardingProps> = ({ darkMode = true }) => {
     setStep(prev => prev - 1);
   };
 
+  const handleOccupationChange = (val: string) => {
+    setOccupation(val);
+    const lower = val.toLowerCase();
+    const isStud = lower.includes('student') || lower.includes('college') || lower.includes('university') || lower.includes('school');
+    setIsStudent(isStud);
+    if (!isStud) {
+      setStudentFundingSource('');
+      setParentFundingInterval('');
+      setParentFundingAmount('');
+    }
+  };
+
+  const handleParentFundingChange = (amountStr: string, intervalStr: string) => {
+    setParentFundingAmount(amountStr);
+    setParentFundingInterval(intervalStr as any);
+    const amt = parseFloat(amountStr) || 0;
+    if (amt <= 0 || !intervalStr) return;
+
+    let computedMonthly = 0;
+    if (intervalStr === 'daily') {
+      computedMonthly = amt * 30;
+    } else if (intervalStr === 'weekly') {
+      computedMonthly = amt * 4.33;
+    } else if (intervalStr === 'monthly') {
+      computedMonthly = amt;
+    } else if (intervalStr === 'irregular') {
+      computedMonthly = amt; // irregular acts as average monthly estimate
+    }
+
+    if (computedMonthly > 0) {
+      setMonthlyIncome(Math.round(computedMonthly).toString());
+    }
+  };
+
   const handleComplete = async () => {
     setLoading(true);
     setError('');
@@ -51,7 +111,15 @@ export const Onboarding: React.FC<OnboardingProps> = ({ darkMode = true }) => {
         occupation,
         monthlyIncome: parseFloat(monthlyIncome),
         preferredCurrency,
-        financialGoal
+        financialGoal,
+        isStudent,
+        studentFundingSource,
+        parentFundingInterval,
+        parentFundingAmount: parentFundingAmount ? parseFloat(parentFundingAmount) : 0,
+        parentFundingIntervalLabel: parentFundingInterval === 'daily' ? 'Day wise' : 
+                                    parentFundingInterval === 'weekly' ? 'Week wise' : 
+                                    parentFundingInterval === 'monthly' ? 'Month wise' : 
+                                    parentFundingInterval === 'irregular' ? 'When parents have money' : ''
       });
       // Trigger canvas confetti
       confetti({
@@ -146,16 +214,120 @@ export const Onboarding: React.FC<OnboardingProps> = ({ darkMode = true }) => {
 
         {/* --- STEP 2: Occupation & Income --- */}
         {step === 2 && (
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div>
               <div className="w-12 h-12 rounded-xl bg-teal-500/10 text-teal-400 flex items-center justify-center mb-4">
                 <Landmark size={24} />
               </div>
               <h2 className="text-2xl font-bold font-display m-0">Income & Occupation</h2>
-              <p className="text-sm text-slate-400 mt-2 m-0">
+              <p className="text-sm text-slate-400 mt-2 m-0 font-medium">
                 Your coach requires monthly income indicators to construct budget targets and calculate savings volatility.
               </p>
             </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Occupation
+              </label>
+              <input
+                type="text"
+                value={occupation}
+                onChange={(e) => handleOccupationChange(e.target.value)}
+                placeholder="e.g. Software Engineer, Student, Entrepreneur"
+                className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all ${
+                  darkMode ? 'bg-slate-900/60 border-slate-800 text-slate-100 placeholder-slate-500' : 'bg-white border-slate-200 placeholder-slate-400'
+                }`}
+              />
+            </div>
+
+            {/* Dynamic Student Funding Fields */}
+            {isStudent && (
+              <div className={`p-4 rounded-xl border space-y-4 animate-fade-in ${
+                darkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-100/50 border-slate-200'
+              }`}>
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase font-bold text-teal-400 tracking-wider">
+                    Student Funding Source
+                  </label>
+                  <div className="grid grid-cols-3 gap-2 text-[11px]">
+                    {[
+                      { id: 'earn', label: 'Earn Income' },
+                      { id: 'parents', label: 'Parent Allowance' },
+                      { id: 'both', label: 'Both' }
+                    ].map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => {
+                          setStudentFundingSource(opt.id as any);
+                          if (opt.id === 'earn') {
+                            setParentFundingInterval('');
+                            setParentFundingAmount('');
+                          }
+                        }}
+                        className={`py-2 px-1 rounded-lg border font-bold transition-all cursor-pointer ${
+                          studentFundingSource === opt.id 
+                            ? 'bg-teal-500/10 border-teal-500/35 text-teal-400' 
+                            : darkMode ? 'border-slate-800 text-slate-350 hover:bg-slate-950/40' : 'border-slate-200 text-slate-650 hover:bg-white'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {(studentFundingSource === 'parents' || studentFundingSource === 'both') && (
+                  <div className="space-y-4 animate-fade-in">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">
+                          Parent Funding Interval
+                        </label>
+                        <select
+                          value={parentFundingInterval}
+                          onChange={(e) => handleParentFundingChange(parentFundingAmount, e.target.value)}
+                          className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-teal-500 ${
+                            darkMode ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-800'
+                          }`}
+                        >
+                          <option value="">Select interval...</option>
+                          <option value="daily">Day-wise (Daily)</option>
+                          <option value="weekly">Week-wise (Weekly)</option>
+                          <option value="monthly">Month-wise (Monthly)</option>
+                          <option value="irregular">Irregular (When parents have money)</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">
+                          Allowance Amount ({preferredCurrency})
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="e.g. 2000"
+                          value={parentFundingAmount}
+                          onChange={(e) => handleParentFundingChange(e.target.value, parentFundingInterval)}
+                          className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-teal-500 ${
+                            darkMode ? 'bg-slate-950 border-slate-800 text-slate-200 placeholder-slate-600' : 'bg-white border-slate-200 placeholder-slate-400'
+                          }`}
+                        />
+                      </div>
+                    </div>
+
+                    {parseFloat(parentFundingAmount) > 0 && parentFundingInterval && (
+                      <div className="p-2.5 rounded-lg bg-teal-500/5 border border-teal-500/10 text-[10px] text-teal-400 font-bold flex items-center gap-1.5">
+                        <span>💡 Calculated parent allowance: {preferredCurrency}{Math.round(
+                          parentFundingInterval === 'daily' ? parseFloat(parentFundingAmount) * 30 :
+                          parentFundingInterval === 'weekly' ? parseFloat(parentFundingAmount) * 4.33 :
+                          parseFloat(parentFundingAmount)
+                        ).toLocaleString()}/month</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -190,21 +362,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ darkMode = true }) => {
                   }`}
                 />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                Occupation
-              </label>
-              <input
-                type="text"
-                value={occupation}
-                onChange={(e) => setOccupation(e.target.value)}
-                placeholder="e.g. Software Engineer, Student, Entrepreneur"
-                className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all ${
-                  darkMode ? 'bg-slate-900/60 border-slate-800 text-slate-100 placeholder-slate-500' : 'bg-white border-slate-200 placeholder-slate-400'
-                }`}
-              />
             </div>
 
             <div className="flex gap-3 pt-2">

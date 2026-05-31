@@ -280,11 +280,12 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
         </div>
       </div>
 
-      {/* Expense List Table */}
+      {/* Expense List Table & Cards */}
       <div className={`border rounded-2xl overflow-hidden ${
         darkMode ? 'bg-slate-900/10 border-slate-800' : 'bg-white border-slate-200'
       }`}>
-        <div className="overflow-x-auto">
+        {/* Desktop View: Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className={`border-b text-[10px] uppercase font-bold tracking-widest text-slate-400 ${
@@ -353,6 +354,69 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View: Clean, Stacked Cards */}
+        <div className="block md:hidden divide-y divide-slate-800/40">
+          {filteredExpenses.map((exp) => (
+            <div key={exp.expenseId} className="p-4 space-y-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="font-bold text-slate-100 text-sm">{exp.merchantName}</h4>
+                  <p className="text-[10px] text-slate-500 mt-0.5">{exp.description}</p>
+                </div>
+                <span className="font-display font-extrabold text-slate-200 text-sm">
+                  {currency}{exp.amount.toFixed(2)}
+                </span>
+              </div>
+              
+              <div className="flex justify-between items-center text-[10px] font-semibold text-slate-400">
+                <div className="flex items-center gap-2">
+                  <span className="bg-slate-800/60 border border-slate-700/30 px-2 py-0.5 rounded-lg text-slate-300">
+                    {exp.category}
+                  </span>
+                  <span className={`text-[8px] px-1.5 py-0.5 rounded-md font-bold uppercase ${
+                    exp.sourceType === 'receipt' 
+                      ? 'bg-purple-500/15 text-purple-400 border border-purple-500/20' 
+                      : 'bg-teal-500/15 text-teal-400 border border-teal-500/20'
+                  }`}>
+                    {exp.sourceType}
+                  </span>
+                </div>
+                <span>{exp.date}</span>
+              </div>
+
+              <div className="flex justify-between items-center border-t border-slate-800/20 pt-2.5">
+                <span className="text-[9px] text-slate-500 uppercase font-bold">{exp.paymentMethod}</span>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => startEdit(exp)}
+                    className="p-1 rounded-lg border border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200 cursor-pointer flex items-center gap-1 text-[10px] px-2.5"
+                  >
+                    <Edit2 size={10} />
+                    <span>Edit</span>
+                  </button>
+                  <button 
+                    onClick={() => {
+                      if (confirm("Are you sure you want to delete this expense record?")) {
+                        deleteExpense(exp.expenseId);
+                      }
+                    }}
+                    className="p-1 rounded-lg border border-rose-500/20 text-rose-450 hover:bg-rose-500/10 cursor-pointer flex items-center gap-1 text-[10px] px-2.5"
+                  >
+                    <Trash2 size={10} />
+                    <span>Delete</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {filteredExpenses.length === 0 && (
+            <div className="p-8 text-center text-slate-500 text-xs">
+              No matching expense logs found.
+            </div>
+          )}
         </div>
       </div>
 

@@ -145,8 +145,6 @@ export class AnalyticsEngine {
     let momChangeSpentPercent = 0;
     if (prevMonthSpent > 0) {
       momChangeSpentPercent = ((currentMonthSpent - prevMonthSpent) / prevMonthSpent) * 100;
-    } else if (currentMonthSpent > 0) {
-      momChangeSpentPercent = 100; // went from 0 to something
     }
 
     // 3. Savings Rate

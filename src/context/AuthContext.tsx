@@ -31,6 +31,13 @@ export interface UserData {
   createdAt: any;
   lastLogin: any;
   onboardingCompleted: boolean;
+  
+  // Student specific funding parameters
+  isStudent?: boolean;
+  studentFundingSource?: 'earn' | 'parents' | 'both' | '';
+  parentFundingInterval?: 'daily' | 'weekly' | 'monthly' | 'irregular' | '';
+  parentFundingAmount?: number;
+  parentFundingIntervalLabel?: string;
 }
 
 interface AuthContextType {

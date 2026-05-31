@@ -6,6 +6,7 @@ import {
   PiggyBank, 
   Target, 
   MessageSquareCode, 
+  MessageSquare,
   BellRing, 
   Share2, 
   HeartHandshake, 
@@ -14,6 +15,7 @@ import {
   Sun,
   Moon,
   Sparkles,
+  Sliders,
   X
 } from 'lucide-react';
 import logo from '../assets/logo.png';
@@ -25,6 +27,7 @@ interface SidebarProps {
   setDarkMode: (val: boolean) => void;
   isOpen?: boolean;
   onClose?: () => void;
+  onOpenSettings?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -33,7 +36,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   darkMode, 
   setDarkMode,
   isOpen = false,
-  onClose
+  onClose,
+  onOpenSettings
 }) => {
   const { userData, logout } = useAuth();
 
@@ -46,6 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'subscriptions', label: 'Subscriptions', icon: BellRing },
     { id: 'share', label: 'Share App', icon: Share2 },
     { id: 'support', label: 'Support FinAI', icon: HeartHandshake },
+    { id: 'feedback', label: 'Feedback & Ideas', icon: MessageSquare },
     { id: 'privacy', label: 'Privacy Policy', icon: Lock },
   ];
 
@@ -110,7 +115,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
 
         {/* Navigation list */}
-        <nav className="flex flex-col gap-1.5">
+        <nav className="flex flex-col gap-1.5 overflow-y-auto max-h-[calc(100vh-290px)] pr-1 scrollbar-thin">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentTab === item.id;
@@ -165,6 +170,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {darkMode ? <Sun size={18} /> : <Moon size={18} />}
           </button>
         </div>
+
+        {/* Profile Settings */}
+        {onOpenSettings && (
+          <button
+            onClick={onOpenSettings}
+            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all text-xs font-bold text-slate-400 hover:text-slate-250 cursor-pointer ${
+              darkMode ? 'border-slate-800/80 hover:bg-slate-900/50' : 'border-slate-200 hover:bg-slate-50 text-slate-650'
+            }`}
+          >
+            <Sliders size={14} className="text-teal-400" />
+            <span>Wealth Profile Settings</span>
+          </button>
+        )}
 
         {/* Logout */}
         <button

@@ -31,10 +31,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ darkMode = true }) => {
   const momChange = analytics?.momChangeSpentPercent || 0;
   const isMomSpike = momChange > 0;
 
-  // Calculate profile progression (14 days tracker)
+  // Calculate profile progression (21 days tracker)
   const daysRegistered = profile?.daysRegistered || 1;
-  const profileProgress = Math.min(14, daysRegistered);
-  const profileProgressPercent = (profileProgress / 14) * 100;
+  const profileProgress = Math.min(21, daysRegistered);
+  const profileProgressPercent = (profileProgress / 21) * 100;
+  const isPersonalizedActive = daysRegistered >= 21;
 
   // Format currency helper
   const fNum = (num: number) => {
@@ -60,30 +61,35 @@ export const Dashboard: React.FC<DashboardProps> = ({ darkMode = true }) => {
           </p>
         </div>
 
-        {/* 14 Day Learning Progress Bar */}
-        <div className={`p-4 rounded-xl border flex items-center gap-4 ${
-          darkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'
-        }`}>
-          <div className="w-10 h-10 rounded-lg bg-teal-500/10 text-teal-400 flex items-center justify-center">
-            <Calendar size={20} className="animate-pulse" />
-          </div>
-          <div>
-            <div className="flex items-center justify-between gap-6">
-              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                Profile Learning Stage
-              </span>
-              <span className="text-xs font-bold text-teal-400">
-                {profileProgress} / 14 Days
+        {/* 21 Day Learning Progress Bar - Hides after 21 days */}
+        {!isPersonalizedActive ? (
+          <div className={`p-4 rounded-xl border flex items-center gap-4 relative overflow-hidden group ${
+            darkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'
+          }`}>
+            <div className="w-10 h-10 rounded-lg bg-teal-500/10 text-teal-400 flex items-center justify-center flex-shrink-0 animate-pulse">
+              <Calendar size={20} />
+            </div>
+            <div>
+              <div className="flex items-center justify-between gap-6">
+                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                  Profile Learning Stage
+                </span>
+                <span className="text-xs font-bold text-teal-400">
+                  {profileProgress} / 21 Days
+                </span>
+              </div>
+              <div className="w-48 h-2 bg-slate-800 rounded-full overflow-hidden mt-1.5 border border-slate-700">
+                <div 
+                  className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 transition-all duration-1000" 
+                  style={{ width: `${profileProgressPercent}%` }}
+                />
+              </div>
+              <span className="text-[9px] text-slate-500 block mt-1.5 font-bold">
+                🔒 {21 - daysRegistered} more days to get a detailed & personalized experience.
               </span>
             </div>
-            <div className="w-40 h-2 bg-slate-800 rounded-full overflow-hidden mt-1.5 border border-slate-700">
-              <div 
-                className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 transition-all duration-1000" 
-                style={{ width: `${profileProgressPercent}%` }}
-              />
-            </div>
           </div>
-        </div>
+        ) : null}
       </div>
 
       {/* Main Core Section Grid */}

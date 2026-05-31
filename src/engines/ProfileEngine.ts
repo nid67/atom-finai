@@ -22,7 +22,9 @@ export class ProfileEngine {
     budgets: Budget[],
     goals: Goal[],
     income: number,
-    createdAtDate: Date
+    createdAtDate: Date,
+    occupation: string = '',
+    isStudent: boolean = false
   ): UserProfileData {
     const now = new Date();
     const daysRegistered = Math.max(1, Math.ceil((now.getTime() - createdAtDate.getTime()) / (1000 * 60 * 60 * 24)));
@@ -108,12 +110,19 @@ export class ProfileEngine {
 
     // 8. Spending Personality Engine
     if (expenses.length === 0) {
-      const durationContribution = Math.min(70, daysRegistered * 5);
-      const aiConfidence = Math.min(100, Math.max(10, durationContribution));
+      let aiConfidence = 0;
       let aiConfidenceLabel: 'Learning' | 'Understanding' | 'Personalized' | 'Highly Personalized' = 'Learning';
-      if (aiConfidence > 75) aiConfidenceLabel = 'Highly Personalized';
-      else if (aiConfidence > 50) aiConfidenceLabel = 'Personalized';
-      else if (aiConfidence > 25) aiConfidenceLabel = 'Understanding';
+
+      if (daysRegistered >= 21) {
+        aiConfidence = 100;
+        aiConfidenceLabel = 'Highly Personalized';
+      } else {
+        const durationContribution = Math.min(60, (daysRegistered / 21) * 60);
+        aiConfidence = Math.max(10, Math.round(durationContribution));
+        if (aiConfidence > 70) aiConfidenceLabel = 'Personalized';
+        else if (aiConfidence > 40) aiConfidenceLabel = 'Understanding';
+        else aiConfidenceLabel = 'Learning';
+      }
 
       return {
         personality: 'Balanced Planner',
@@ -141,8 +150,29 @@ export class ProfileEngine {
 
     // Personality classification
     const isEntertainmentHeavy = (categorySpending['Entertainment'] || 0) + (categorySpending['Dining Out'] || 0) > currentSpent * 0.35;
+    const isStudentProfile = isStudent || occupation.toLowerCase().includes('student') || occupation.toLowerCase().includes('college') || occupation.toLowerCase().includes('university') || occupation.toLowerCase().includes('school');
     
-    if (savingsRate >= 35 && budgetScore === 30) {
+    if (isStudentProfile) {
+      if (savingsRate >= 30 && budgetScore === 30) {
+        personality = 'Scholar Saver';
+        strongestHabit = 'Exceptional allowance management and conservative discretionary spending';
+        largestWeakness = 'May limit social integrations and key campus networking opportunities';
+        riskLevel = 'Conservative';
+        budgetDiscipline = 'Exceptional';
+      } else if (savingsRate >= 15) {
+        personality = 'Balanced Academic';
+        strongestHabit = 'Steady balance between study materials, personal comfort, and savings';
+        largestWeakness = 'Vulnerable to sudden mid-semester expense spikes';
+        riskLevel = 'Moderate';
+        budgetDiscipline = 'Stable';
+      } else {
+        personality = 'Lifestyle Scholar';
+        strongestHabit = 'Highly active in campus social circles and peer experiences';
+        largestWeakness = 'High reliance on emergency parental infusions; low savings cushion';
+        riskLevel = 'Aggressive';
+        budgetDiscipline = 'Critical Attention Required';
+      }
+    } else if (savingsRate >= 35 && budgetScore === 30) {
       personality = 'Smart Saver';
       strongestHabit = 'High saving rate and solid budget adherence';
       largestWeakness = 'Potential underspending on high-value life experiences';
@@ -173,17 +203,23 @@ export class ProfileEngine {
       riskLevel = 'Moderate';
     }
 
-    // 9. AI Confidence Level System
-    // Confidence = (Days Registered * 5%) + (Number of Expenses * 2%)
-    // Capped at 100%
-    const durationContribution = Math.min(70, daysRegistered * 5);
-    const volumeContribution = Math.min(30, expenses.length * 2);
-    const aiConfidence = Math.min(100, Math.max(10, durationContribution + volumeContribution));
-
+    // 9. AI Confidence Level System mapped to 21-day timeline
+    let aiConfidence = 0;
     let aiConfidenceLabel: 'Learning' | 'Understanding' | 'Personalized' | 'Highly Personalized' = 'Learning';
-    if (aiConfidence > 75) aiConfidenceLabel = 'Highly Personalized';
-    else if (aiConfidence > 50) aiConfidenceLabel = 'Personalized';
-    else if (aiConfidence > 25) aiConfidenceLabel = 'Understanding';
+
+    if (daysRegistered >= 21) {
+      aiConfidence = 100;
+      aiConfidenceLabel = 'Highly Personalized';
+    } else {
+      // Linear scaling up to 90% based on days registered and expense volume
+      const durationContribution = Math.min(60, (daysRegistered / 21) * 60);
+      const volumeContribution = Math.min(30, expenses.length * 2);
+      aiConfidence = Math.max(10, Math.round(durationContribution + volumeContribution));
+      
+      if (aiConfidence > 70) aiConfidenceLabel = 'Personalized';
+      else if (aiConfidence > 40) aiConfidenceLabel = 'Understanding';
+      else aiConfidenceLabel = 'Learning';
+    }
 
     const goalPriority = goals.length > 0 ? goals[0].goalName : 'Build safety net';
 

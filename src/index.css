@@ -116,6 +116,15 @@
 }
 
 /* Animations */
+@keyframes loading-bar {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 @keyframes glow {
   0% {
     filter: drop-shadow(0 0 10px rgba(6, 182, 212, 0.2));

@@ -42,10 +42,15 @@ export const Login: React.FC<LoginProps> = ({ darkMode = true }) => {
             <img src={logo} alt="Atom FinAI Logo" className="w-full h-full object-contain rounded-2xl shadow-xl shadow-teal-500/10" />
           </div>
           
-          <div>
-            <h1 className="font-display font-extrabold text-3xl tracking-tight m-0 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent">
-              Atom FinAI
-            </h1>
+          <div className="space-y-1">
+            <div className="flex items-center justify-center gap-2">
+              <h1 className="font-display font-extrabold text-3xl tracking-tight m-0 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent">
+                Atom FinAI
+              </h1>
+              <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase bg-teal-500/10 text-teal-400 border border-teal-500/20 rounded-md tracking-wider animate-pulse">
+                v1
+              </span>
+            </div>
             <span className="text-[10px] tracking-widest uppercase font-bold text-teal-400 mt-1 block">
               AI Wealth & Intelligence Coach
             </span>

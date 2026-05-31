@@ -143,22 +143,30 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       unsubGoals();
       unsubSubs();
     };
-  }, [user]);
+  }, [user, !!userData]);
 
   // Hook for computing metrics whenever data updates
   useEffect(() => {
     if (!user || !userData || loading) return;
 
     const performCalcs = async () => {
-      const income = userData.monthlyIncome || 0;
-      const createdAt = userData.createdAt?.toDate ? userData.createdAt.toDate() : new Date();
+      const income = userData?.monthlyIncome || 0;
+      const createdAt = userData?.createdAt?.toDate ? userData.createdAt.toDate() : new Date();
 
       // 1. Run Analytics Engine
       const summary = AnalyticsEngine.analyze(expenses, income);
       setAnalytics(summary);
 
       // 2. Run Profile Engine
-      const userProfile = ProfileEngine.calculateProfile(expenses, budgets, goals, income, createdAt);
+      const userProfile = ProfileEngine.calculateProfile(
+        expenses, 
+        budgets, 
+        goals, 
+        income, 
+        createdAt,
+        userData?.occupation || '',
+        !!userData?.isStudent
+      );
       setProfile(userProfile);
 
       // 3. Run Rule Engine
@@ -211,7 +219,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       });
 
       // 6. Update user's Health Score & Personality on user doc
-      if (userData.financialHealthScore !== userProfile.healthScore || userData.financialPersonality !== userProfile.personality) {
+      if (userData?.financialHealthScore !== userProfile.healthScore || userData?.financialPersonality !== userProfile.personality) {
         const userRef = doc(db, 'users', user.uid);
         batch.update(userRef, {
           financialHealthScore: userProfile.healthScore,
@@ -261,7 +269,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
 
     performCalcs();
-  }, [expenses, budgets, goals, loading]);
+  }, [expenses, budgets, goals, loading, userData]);
 
   // --- EXPENSE CRUD ---
   const addExpense = async (exp: Omit<Expense, 'expenseId' | 'userId' | 'createdAt' | 'updatedAt'>) => {
