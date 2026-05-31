@@ -141,16 +141,16 @@ export class AnalyticsEngine {
     const curUnexpectedInflows = curExpenses.filter(e => e.category === 'Unexpected Inflow');
     const curRealExpenses = curExpenses.filter(e => e.category !== 'Unexpected Inflow');
 
-    const prevUnexpectedInflows = prevExpenses.filter(e => e.category === 'Unexpected Inflow');
+
     const prevRealExpenses = prevExpenses.filter(e => e.category !== 'Unexpected Inflow');
 
     // Sum inflows
     const curInflowSum = curUnexpectedInflows.reduce((sum, e) => sum + e.amount, 0);
-    const prevInflowSum = prevUnexpectedInflows.reduce((sum, e) => sum + e.amount, 0);
+
 
     // Effective Monthly Income
     const curEffectiveIncome = income + curInflowSum;
-    const prevEffectiveIncome = income + prevInflowSum;
+
 
     // 1. Calculate Spent
     const currentMonthSpent = curRealExpenses.reduce((sum, e) => sum + e.amount, 0);
