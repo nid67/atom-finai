@@ -50,8 +50,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ darkMode = true }) => {
           return;
         }
       }
-      if (!monthlyIncome || parseFloat(monthlyIncome) <= 0) {
-        setError('Please enter a valid monthly income equivalent.');
+      const incomeVal = parseFloat(monthlyIncome) || 0;
+      if (!isStudent && (!monthlyIncome || incomeVal <= 0)) {
+        setError('Please enter a valid monthly income.');
+        return;
+      }
+      if (isStudent && incomeVal < 0) {
+        setError('Income cannot be negative.');
         return;
       }
     }

@@ -98,7 +98,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim() || !occupation.trim() || !monthlyIncome || parseFloat(monthlyIncome) <= 0) {
+    const incomeVal = parseFloat(monthlyIncome) || 0;
+    if (!fullName.trim() || !occupation.trim() || (!isStudent && incomeVal <= 0) || (isStudent && incomeVal < 0)) {
       setError('Please fill in all required fields with valid values.');
       return;
     }
