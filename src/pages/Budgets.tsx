@@ -33,7 +33,6 @@ export const Budgets: React.FC<BudgetsProps> = ({ darkMode = true }) => {
     "Bills & Utilities",
     "Entertainment",
     "Health & Wellness",
-    "Unexpected Inflow",
     "Others"
   ];
 

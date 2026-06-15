@@ -18,35 +18,26 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({ darkMode = true }) => {
   const { userData } = useAuth();
-  const { profile, analytics, alerts, suggestions, expenses } = useFinance();
+  const { profile, analytics, alerts, suggestions, budgets } = useFinance();
 
-  const income = userData?.monthlyIncome || 0;
   const currency = userData?.preferredCurrency || '₹';
 
-  // Calculate unexpected inflows for the current month
-  const currentMonth = new Date().getMonth() + 1;
-  const currentYear = new Date().getFullYear();
-  const unexpectedInflowsSum = (expenses || [])
-    .filter(e => {
-      const d = new Date(e.date);
-      return e.category === 'Unexpected Inflow' && 
-             (d.getMonth() + 1) === currentMonth && 
-             d.getFullYear() === currentYear;
-    })
-    .reduce((sum, e) => sum + e.amount, 0);
-
-  const totalMonthlyInflow = income + unexpectedInflowsSum;
-
   const totalSpent = analytics?.currentMonthSpent || 0;
-  const totalSaved = Math.max(0, totalMonthlyInflow - totalSpent);
-  const savingsRate = analytics?.savingsRate || 0;
 
   // MOM Spent details
   const momChange = analytics?.momChangeSpentPercent || 0;
   const isMomSpike = momChange > 0;
 
+  // Active budgets calculation
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
+  const activeBudgets = (budgets || []).filter(b => b.month === currentMonth && b.year === currentYear);
+  const totalBudgetLimit = activeBudgets.reduce((sum, b) => sum + b.monthlyLimit, 0);
+  const totalBudgetSpent = activeBudgets.reduce((sum, b) => sum + b.spentAmount, 0);
+  const remainingBudget = activeBudgets.reduce((sum, b) => sum + b.remainingAmount, 0);
+
   // Calculate profile progression (21 days tracker)
-  const daysRegistered = profile?.daysRegistered || 1;
+  const daysRegistered = profile?.daysRegistered ?? 0;
   const profileProgress = Math.min(21, daysRegistered);
   const profileProgressPercent = (profileProgress / 21) * 100;
   const isPersonalizedActive = daysRegistered >= 21;
@@ -116,8 +107,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ darkMode = true }) => {
           
           <div className="flex gap-4 mt-6 text-center text-xs">
             <div>
-              <span className="text-slate-400 block font-semibold">Savings Cushion</span>
-              <span className="text-slate-200 font-bold text-sm">{savingsRate.toFixed(0)}%</span>
+              <span className="text-slate-400 block font-semibold">Top Category</span>
+              <span className="text-slate-200 font-bold text-sm">{profile?.topCategory || 'None'}</span>
             </div>
             <div className="w-px h-8 bg-slate-800" />
             <div>
@@ -200,67 +191,56 @@ export const Dashboard: React.FC<DashboardProps> = ({ darkMode = true }) => {
       </div>
 
       {/* Numerical Metrics Strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {/* Income */}
-        <div className={`p-4 rounded-xl border flex flex-col justify-center ${
-          darkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-100/50 border-slate-200'
-        }`}>
-          <span className="text-[10px] uppercase text-slate-400 font-bold tracking-widest">
-            Monthly Inflow
-          </span>
-          <span className="text-2xl font-display font-extrabold tracking-tight mt-1 flex flex-col">
-            <span>{currency}{fNum(totalMonthlyInflow)}</span>
-            {unexpectedInflowsSum > 0 && (
-              <span className="text-[9px] text-teal-400 font-bold mt-1 tracking-normal normal-case leading-tight">
-                ⚡ +{currency}{fNum(unexpectedInflowsSum)} unexpected inflow
-              </span>
-            )}
-          </span>
-        </div>
-
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Spent */}
         <div className={`p-4 rounded-xl border flex flex-col justify-center ${
           darkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-100/50 border-slate-200'
         }`}>
           <div className="flex items-center justify-between">
             <span className="text-[10px] uppercase text-slate-400 font-bold tracking-widest">
-              Total Spent
+              Total Spent (Month)
             </span>
             {momChange !== 0 && (
               <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center ${
-                isMomSpike ? 'bg-rose-500/10 text-rose-400' : 'bg-emerald-500/10 text-emerald-400'
+                isMomSpike ? 'bg-rose-500/10 text-rose-455' : 'bg-emerald-500/10 text-emerald-400'
               }`}>
                 {isMomSpike ? <TrendingUp size={10} className="mr-0.5" /> : <TrendingDown size={10} className="mr-0.5" />}
                 {Math.abs(Math.round(momChange))}% MoM
               </span>
             )}
           </div>
-          <span className="text-2xl font-display font-extrabold tracking-tight mt-1 text-rose-400">
+          <span className="text-2xl font-display font-extrabold tracking-tight mt-1 text-rose-455">
             {currency}{fNum(totalSpent)}
           </span>
         </div>
 
-        {/* Saved */}
+        {/* Budget limit */}
         <div className={`p-4 rounded-xl border flex flex-col justify-center ${
           darkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-100/50 border-slate-200'
         }`}>
           <span className="text-[10px] uppercase text-slate-400 font-bold tracking-widest">
-            Total Saved
+            Active Budget Pool
           </span>
-          <span className="text-2xl font-display font-extrabold tracking-tight mt-1 text-emerald-400">
-            {currency}{fNum(totalSaved)}
+          <span className="text-2xl font-display font-extrabold tracking-tight mt-1 text-teal-400">
+            {currency}{fNum(totalBudgetLimit)}
+          </span>
+          <span className="text-[9px] text-slate-500 font-bold mt-1">
+            {activeBudgets.length} categories budgeted
           </span>
         </div>
 
-        {/* Savings Rate */}
+        {/* Remaining Budget */}
         <div className={`p-4 rounded-xl border flex flex-col justify-center ${
           darkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-100/50 border-slate-200'
         }`}>
           <span className="text-[10px] uppercase text-slate-400 font-bold tracking-widest">
-            Savings Rate
+            Remaining Budget
           </span>
-          <span className="text-2xl font-display font-extrabold tracking-tight mt-1 text-cyan-400">
-            {savingsRate.toFixed(1)}%
+          <span className="text-2xl font-display font-extrabold tracking-tight mt-1 text-emerald-450">
+            {currency}{fNum(remainingBudget)}
+          </span>
+          <span className="text-[9px] text-slate-500 font-bold mt-1">
+            {totalBudgetLimit > 0 ? `${((totalBudgetSpent / totalBudgetLimit) * 100).toFixed(0)}% utilized` : 'No budgets configured'}
           </span>
         </div>
       </div>

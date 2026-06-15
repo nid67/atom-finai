@@ -55,7 +55,6 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
     "Bills & Utilities",
     "Entertainment",
     "Health & Wellness",
-    "Unexpected Inflow",
     "Others"
   ];
 
@@ -130,18 +129,17 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
   // Submit Manual Expense
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const isUnexpectedInflow = category === 'Unexpected Inflow';
     if (!amount || parseFloat(amount) < 1) {
-      alert(isUnexpectedInflow ? "Inflow amount must be ₹1 and above." : "Expense amount must be ₹1 and above.");
+      alert("Expense amount must be ₹1 and above.");
       return;
     }
     try {
       await addExpense({
         amount: parseFloat(amount),
         category,
-        description: description || (isUnexpectedInflow ? 'Unexpected cash inflow' : ''),
-        merchantName: isUnexpectedInflow ? 'Unexpected Inflow' : (merchantName || 'Direct Expense'),
-        paymentMethod: isUnexpectedInflow ? 'Cash' : paymentMethod,
+        description: description || '',
+        merchantName: merchantName || 'Direct Expense',
+        paymentMethod: paymentMethod,
         sourceType: 'manual',
         date
       });
@@ -159,18 +157,17 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingExpense) return;
-    const isUnexpectedInflow = category === 'Unexpected Inflow';
     if (!amount || parseFloat(amount) < 1) {
-      alert(isUnexpectedInflow ? "Inflow amount must be ₹1 and above." : "Expense amount must be ₹1 and above.");
+      alert("Expense amount must be ₹1 and above.");
       return;
     }
     try {
       await updateExpense(editingExpense.expenseId, {
         amount: parseFloat(amount),
         category,
-        description: description || (isUnexpectedInflow ? 'Unexpected cash inflow' : ''),
-        merchantName: isUnexpectedInflow ? 'Unexpected Inflow' : merchantName,
-        paymentMethod: isUnexpectedInflow ? 'Cash' : paymentMethod,
+        description: description || '',
+        merchantName: merchantName,
+        paymentMethod: paymentMethod,
         date
       });
       setEditingExpense(null);
@@ -198,6 +195,58 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
     const matchesCategory = categoryFilter === '' || e.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
+
+  // Helper to format date header nicely
+  const formatDateHeader = (dateStr: string) => {
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+    
+    const todayStr = today.toISOString().split('T')[0];
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    
+    if (dateStr === todayStr) {
+      return 'Today';
+    } else if (dateStr === yesterdayStr) {
+      return 'Yesterday';
+    } else {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        const localDate = new Date(year, month, day);
+        return localDate.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+      }
+      return dateStr;
+    }
+  };
+
+  // Helper to calculate total spent for a date group
+  const getDaySummary = (items: Expense[]) => {
+    let spent = 0;
+    items.forEach(item => {
+      spent += item.amount;
+    });
+    return { spent };
+  };
+
+  // Group filtered expenses by date
+  const groupedExpenses = filteredExpenses.reduce<Record<string, Expense[]>>((acc, exp) => {
+    if (!acc[exp.date]) {
+      acc[exp.date] = [];
+    }
+    acc[exp.date].push(exp);
+    return acc;
+  }, {});
+
+  // Sort dates descending
+  const sortedDates = Object.keys(groupedExpenses).sort((a, b) => b.localeCompare(a));
 
   return (
     <div className="space-y-6">
@@ -297,49 +346,79 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/40 text-xs">
-              {filteredExpenses.map((exp) => (
-                <tr key={exp.expenseId} className={darkMode ? 'hover:bg-slate-900/20' : 'hover:bg-slate-50'}>
-                  <td className="p-4">
-                    <span className="font-semibold text-slate-100 block">{exp.merchantName}</span>
-                    <span className="text-[10px] text-slate-500">{exp.description}</span>
-                  </td>
-                  <td className="p-4 font-medium">{exp.category}</td>
-                  <td className="p-4 text-slate-400">{exp.paymentMethod}</td>
-                  <td className="p-4 font-semibold text-slate-400">{exp.date}</td>
-                  <td className="p-4 text-right font-display font-extrabold text-slate-200 text-sm">
-                    {currency}{exp.amount.toFixed(2)}
-                  </td>
-                  <td className="p-4 text-center">
-                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                      exp.sourceType === 'receipt' 
-                        ? 'bg-purple-500/15 text-purple-400 border border-purple-500/20' 
-                        : 'bg-teal-500/15 text-teal-400 border border-teal-500/20'
+              {sortedDates.map((dateStr) => {
+                const dayItems = groupedExpenses[dateStr];
+                const daySummary = getDaySummary(dayItems);
+                return (
+                  <React.Fragment key={dateStr}>
+                    {/* Date Section Header Row */}
+                    <tr className={`border-y ${
+                      darkMode ? 'bg-slate-950/45 border-slate-850/60' : 'bg-slate-100/60 border-slate-200/60'
                     }`}>
-                      {exp.sourceType}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex justify-center gap-2">
-                      <button 
-                        onClick={() => startEdit(exp)}
-                        className="p-1.5 rounded-lg border border-transparent text-slate-400 hover:bg-slate-800 hover:text-slate-200 cursor-pointer"
-                      >
-                        <Edit2 size={13} />
-                      </button>
-                      <button 
-                        onClick={() => {
-                          if (confirm("Are you sure you want to delete this expense record?")) {
-                            deleteExpense(exp.expenseId);
-                          }
-                        }}
-                        className="p-1.5 rounded-lg border border-transparent text-rose-400 hover:bg-rose-500/10 cursor-pointer"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                      <td colSpan={7} className="p-3 px-4">
+                        <div className="flex justify-between items-center">
+                          <span className={`font-display font-bold text-xs tracking-wide ${
+                            darkMode ? 'text-teal-400' : 'text-teal-650'
+                          }`}>
+                            {formatDateHeader(dateStr)}
+                          </span>
+                          <div className="flex gap-4 text-[10px] font-bold">
+                            {daySummary.spent > 0 && (
+                              <span className={darkMode ? 'text-slate-400' : 'text-slate-500'}>
+                                Total Spent: <span className={darkMode ? 'text-slate-200' : 'text-slate-700'}>{currency}{daySummary.spent.toFixed(2)}</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                    {/* Transactions for this Day */}
+                    {dayItems.map((exp) => (
+                      <tr key={exp.expenseId} className={darkMode ? 'hover:bg-slate-900/20' : 'hover:bg-slate-50'}>
+                        <td className="p-4 pl-6">
+                          <span className="font-semibold text-slate-100 block">{exp.merchantName}</span>
+                          <span className="text-[10px] text-slate-500">{exp.description}</span>
+                        </td>
+                        <td className="p-4 font-medium">{exp.category}</td>
+                        <td className="p-4 text-slate-400">{exp.paymentMethod}</td>
+                        <td className="p-4 font-semibold text-slate-400">{exp.date}</td>
+                        <td className="p-4 text-right font-display font-extrabold text-slate-200 text-sm">
+                          {currency}{exp.amount.toFixed(2)}
+                        </td>
+                        <td className="p-4 text-center">
+                          <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                            exp.sourceType === 'receipt' 
+                              ? 'bg-purple-500/15 text-purple-400 border border-purple-500/20' 
+                              : 'bg-teal-500/15 text-teal-400 border border-teal-500/20'
+                          }`}>
+                            {exp.sourceType}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex justify-center gap-2">
+                            <button 
+                              onClick={() => startEdit(exp)}
+                              className="p-1.5 rounded-lg border border-transparent text-slate-400 hover:bg-slate-800 hover:text-slate-200 cursor-pointer"
+                            >
+                              <Edit2 size={13} />
+                            </button>
+                            <button 
+                              onClick={() => {
+                                if (confirm("Are you sure you want to delete this expense record?")) {
+                                  deleteExpense(exp.expenseId);
+                                }
+                              }}
+                              className="p-1.5 rounded-lg border border-transparent text-rose-450 hover:bg-rose-500/10 cursor-pointer"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                );
+              })}
 
               {filteredExpenses.length === 0 && (
                 <tr>
@@ -353,60 +432,91 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
         </div>
 
         {/* Mobile View: Clean, Stacked Cards */}
-        <div className="block md:hidden divide-y divide-slate-800/40">
-          {filteredExpenses.map((exp) => (
-            <div key={exp.expenseId} className="p-4 space-y-3">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h4 className="font-bold text-slate-100 text-sm">{exp.merchantName}</h4>
-                  <p className="text-[10px] text-slate-500 mt-0.5">{exp.description}</p>
-                </div>
-                <span className="font-display font-extrabold text-slate-200 text-sm">
-                  {currency}{exp.amount.toFixed(2)}
-                </span>
-              </div>
-              
-              <div className="flex justify-between items-center text-[10px] font-semibold text-slate-400">
-                <div className="flex items-center gap-2">
-                  <span className="bg-slate-800/60 border border-slate-700/30 px-2 py-0.5 rounded-lg text-slate-300">
-                    {exp.category}
-                  </span>
-                  <span className={`text-[8px] px-1.5 py-0.5 rounded-md font-bold uppercase ${
-                    exp.sourceType === 'receipt' 
-                      ? 'bg-purple-500/15 text-purple-400 border border-purple-500/20' 
-                      : 'bg-teal-500/15 text-teal-400 border border-teal-500/20'
+        <div className="block md:hidden">
+          {sortedDates.map((dateStr) => {
+            const dayItems = groupedExpenses[dateStr];
+            const daySummary = getDaySummary(dayItems);
+            return (
+              <div key={dateStr} className={`border-b last:border-b-0 ${
+                darkMode ? 'border-slate-800/40' : 'border-slate-200'
+              }`}>
+                {/* Date Group Header */}
+                <div className={`p-3 px-4 flex justify-between items-center ${
+                  darkMode ? 'bg-slate-950/30 border-b border-slate-800/45' : 'bg-slate-50 border-b border-slate-200'
+                }`}>
+                  <span className={`font-display font-bold text-xs tracking-wide ${
+                    darkMode ? 'text-teal-400' : 'text-teal-650'
                   }`}>
-                    {exp.sourceType}
+                    {formatDateHeader(dateStr)}
                   </span>
+                  <div className="flex gap-3 text-[10px] font-bold">
+                    {daySummary.spent > 0 && (
+                      <span className={darkMode ? 'text-slate-400' : 'text-slate-500'}>
+                        Spent: <span className={darkMode ? 'text-slate-200' : 'text-slate-700'}>{currency}{daySummary.spent.toFixed(2)}</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <span>{exp.date}</span>
-              </div>
 
-              <div className="flex justify-between items-center border-t border-slate-800/20 pt-2.5">
-                <span className="text-[9px] text-slate-500 uppercase font-bold">{exp.paymentMethod}</span>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => startEdit(exp)}
-                    className="p-1 rounded-lg border border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200 cursor-pointer flex items-center gap-1 text-[10px] px-2.5"
-                  >
-                    <Edit2 size={10} />
-                    <span>Edit</span>
-                  </button>
-                  <button 
-                    onClick={() => {
-                      if (confirm("Are you sure you want to delete this expense record?")) {
-                        deleteExpense(exp.expenseId);
-                      }
-                    }}
-                    className="p-1 rounded-lg border border-rose-500/20 text-rose-450 hover:bg-rose-500/10 cursor-pointer flex items-center gap-1 text-[10px] px-2.5"
-                  >
-                    <Trash2 size={10} />
-                    <span>Delete</span>
-                  </button>
+                {/* Items for this Date */}
+                <div className={`divide-y ${darkMode ? 'divide-slate-800/20' : 'divide-slate-100'}`}>
+                  {dayItems.map((exp) => (
+                    <div key={exp.expenseId} className="p-4 space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-bold text-slate-100 text-sm">{exp.merchantName}</h4>
+                          <p className="text-[10px] text-slate-500 mt-0.5">{exp.description}</p>
+                        </div>
+                        <span className="font-display font-extrabold text-slate-200 text-sm">
+                          {currency}{exp.amount.toFixed(2)}
+                        </span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center text-[10px] font-semibold text-slate-400">
+                        <div className="flex items-center gap-2">
+                          <span className="bg-slate-800/60 border border-slate-700/30 px-2 py-0.5 rounded-lg text-slate-300">
+                            {exp.category}
+                          </span>
+                          <span className={`text-[8px] px-1.5 py-0.5 rounded-md font-bold uppercase ${
+                            exp.sourceType === 'receipt' 
+                              ? 'bg-purple-500/15 text-purple-400 border border-purple-500/20' 
+                              : 'bg-teal-500/15 text-teal-400 border border-teal-500/20'
+                          }`}>
+                            {exp.sourceType}
+                          </span>
+                        </div>
+                        <span>{exp.date}</span>
+                      </div>
+
+                      <div className="flex justify-between items-center border-t border-slate-800/20 pt-2.5">
+                        <span className="text-[9px] text-slate-500 uppercase font-bold">{exp.paymentMethod}</span>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => startEdit(exp)}
+                            className="p-1 rounded-lg border border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-slate-200 cursor-pointer flex items-center gap-1 text-[10px] px-2.5"
+                          >
+                            <Edit2 size={10} />
+                            <span>Edit</span>
+                          </button>
+                          <button 
+                            onClick={() => {
+                              if (confirm("Are you sure you want to delete this expense record?")) {
+                                deleteExpense(exp.expenseId);
+                              }
+                            }}
+                            className="p-1 rounded-lg border border-rose-500/20 text-rose-450 hover:bg-rose-500/10 cursor-pointer flex items-center gap-1 text-[10px] px-2.5"
+                          >
+                            <Trash2 size={10} />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {filteredExpenses.length === 0 && (
             <div className="p-8 text-center text-slate-500 text-xs">
@@ -429,25 +539,23 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
               <X size={18} />
             </button>
             <h3 className="text-xl font-bold font-display mb-4">
-              {category === 'Unexpected Inflow' ? 'Add Unexpected Inflow' : 'Add Manual Expense'}
+              Add Manual Expense
             </h3>
 
             <form onSubmit={handleAddSubmit} className="space-y-4 text-xs font-semibold">
-              {category !== 'Unexpected Inflow' && (
-                <div className="space-y-1.5 animate-fade-in">
-                  <label className="text-slate-400">Merchant Name</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Starbucks"
-                    value={merchantName}
-                    onChange={(e) => setMerchantName(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-xl border focus:outline-none focus:ring-1 focus:ring-teal-500 ${
-                      darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
-                    }`}
-                  />
-                </div>
-              )}
+              <div className="space-y-1.5">
+                <label className="text-slate-400">Merchant Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Starbucks"
+                  value={merchantName}
+                  onChange={(e) => setMerchantName(e.target.value)}
+                  className={`w-full px-3 py-2 rounded-xl border focus:outline-none focus:ring-1 focus:ring-teal-500 ${
+                    darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
+                  }`}
+                />
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
@@ -471,7 +579,7 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     className={`w-full px-3 py-2 rounded-xl border focus:outline-none ${
-                      darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
+                      darkMode ? 'bg-slate-950 border-slate-850' : 'bg-white border-slate-200'
                     }`}
                   >
                     {categories.map(c => (
@@ -481,7 +589,7 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
                 </div>
               </div>
 
-              <div className={category === 'Unexpected Inflow' ? 'grid grid-cols-1 gap-4 mt-4' : 'grid grid-cols-2 gap-4 mt-4'}>
+              <div className="grid grid-cols-2 gap-4 mt-4">
                 <div className="space-y-1.5">
                   <label className="text-slate-400">Date</label>
                   <input
@@ -496,31 +604,29 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
                   />
                 </div>
 
-                {category !== 'Unexpected Inflow' && (
-                  <div className="space-y-1.5 animate-fade-in">
-                    <label className="text-slate-400">Payment Method</label>
-                    <select
-                      value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className={`w-full px-3 py-2 rounded-xl border focus:outline-none ${
-                        darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
-                      }`}
-                    >
-                      <option value="UPI">UPI</option>
-                      <option value="Card">Card</option>
-                      <option value="Cash">Cash</option>
-                    </select>
-                  </div>
-                )}
+                <div className="space-y-1.5 animate-fade-in">
+                  <label className="text-slate-400">Payment Method</label>
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-xl border focus:outline-none ${
+                      darkMode ? 'bg-slate-950 border-slate-805' : 'bg-white border-slate-200'
+                    }`}
+                  >
+                    <option value="UPI">UPI</option>
+                    <option value="Card">Card</option>
+                    <option value="Cash">Cash</option>
+                  </select>
+                </div>
               </div>
 
               <div className="space-y-1.5 mt-4">
                 <label className="text-slate-400">
-                  {category === 'Unexpected Inflow' ? 'Source / Description' : 'Description'}
+                  Description
                 </label>
                 <input
                   type="text"
-                  placeholder={category === 'Unexpected Inflow' ? 'e.g. Allowance from parents or side income' : 'e.g. Latte coffee'}
+                  placeholder="e.g. Latte coffee"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className={`w-full px-3 py-2 rounded-xl border focus:outline-none ${
@@ -533,7 +639,7 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
                 type="submit"
                 className="w-full py-3 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold rounded-xl transition-all shadow cursor-pointer mt-6"
               >
-                {category === 'Unexpected Inflow' ? 'Save Inflow Record' : 'Save Transaction'}
+                Save Transaction
               </button>
             </form>
           </div>
@@ -553,24 +659,22 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
               <X size={18} />
             </button>
             <h3 className="text-xl font-bold font-display mb-4">
-              {category === 'Unexpected Inflow' ? 'Edit Unexpected Inflow' : 'Edit Expense Record'}
+              Edit Expense Record
             </h3>
 
             <form onSubmit={handleEditSubmit} className="space-y-4 text-xs font-semibold">
-              {category !== 'Unexpected Inflow' && (
-                <div className="space-y-1.5 animate-fade-in">
-                  <label className="text-slate-400">Merchant Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={merchantName}
-                    onChange={(e) => setMerchantName(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-xl border focus:outline-none ${
-                      darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
-                    }`}
-                  />
-                </div>
-              )}
+              <div className="space-y-1.5 animate-fade-in">
+                <label className="text-slate-400">Merchant Name</label>
+                <input
+                  type="text"
+                  required
+                  value={merchantName}
+                  onChange={(e) => setMerchantName(e.target.value)}
+                  className={`w-full px-3 py-2 rounded-xl border focus:outline-none ${
+                    darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
+                  }`}
+                />
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
@@ -582,7 +686,7 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     className={`w-full px-3 py-2 rounded-xl border focus:outline-none ${
-                      darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
+                      darkMode ? 'bg-slate-950 border-slate-805' : 'bg-white border-slate-200'
                     }`}
                   />
                 </div>
@@ -603,7 +707,7 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
                 </div>
               </div>
 
-              <div className={category === 'Unexpected Inflow' ? 'grid grid-cols-1 gap-4' : 'grid grid-cols-2 gap-4'}>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-slate-400">Date</label>
                   <input
@@ -613,32 +717,30 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
                     onChange={(e) => setDate(e.target.value)}
                     style={{ colorScheme: darkMode ? 'dark' : 'light' }}
                     className={`w-full px-3 py-2 rounded-xl border focus:outline-none ${
-                      darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
+                      darkMode ? 'bg-slate-950 border-slate-808' : 'bg-white border-slate-200'
                     }`}
                   />
                 </div>
 
-                {category !== 'Unexpected Inflow' && (
-                  <div className="space-y-1.5 animate-fade-in">
-                    <label className="text-slate-400">Payment Method</label>
-                    <select
-                      value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className={`w-full px-3 py-2 rounded-xl border focus:outline-none ${
-                        darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
-                      }`}
-                    >
-                      <option value="UPI">UPI</option>
-                      <option value="Card">Card</option>
-                      <option value="Cash">Cash</option>
-                    </select>
-                  </div>
-                )}
+                <div className="space-y-1.5 animate-fade-in">
+                  <label className="text-slate-400">Payment Method</label>
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-xl border focus:outline-none ${
+                      darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
+                    }`}
+                  >
+                    <option value="UPI">UPI</option>
+                    <option value="Card">Card</option>
+                    <option value="Cash">Cash</option>
+                  </select>
+                </div>
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-slate-400">
-                  {category === 'Unexpected Inflow' ? 'Source / Description' : 'Description'}
+                  Description
                 </label>
                 <input
                   type="text"
@@ -654,7 +756,7 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
                 type="submit"
                 className="w-full py-3 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold rounded-xl transition-all shadow cursor-pointer mt-2"
               >
-                {category === 'Unexpected Inflow' ? 'Update Inflow Record' : 'Update Transaction'}
+                Update Transaction
               </button>
             </form>
           </div>

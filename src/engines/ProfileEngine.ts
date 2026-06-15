@@ -28,14 +28,13 @@ export class ProfileEngine {
   ): UserProfileData {
     const now = new Date();
     
-    // Calculate active learning/tracking days (days since oldest expense data)
+    // Calculate active learning/tracking days (number of unique dates with expense data)
     let daysRegistered = 0;
     if (expenses.length > 0) {
-      const oldestExpenseTime = Math.min(...expenses.map(e => new Date(e.date).getTime()));
-      const oldestExpenseDate = new Date(oldestExpenseTime);
-      daysRegistered = Math.max(1, Math.ceil((now.getTime() - oldestExpenseDate.getTime()) / (1000 * 60 * 60 * 24)));
+      const uniqueDates = new Set(expenses.map(e => e.date));
+      daysRegistered = uniqueDates.size;
     } else if (createdAtDate) {
-      // Reference variable to satisfy compiler and default to 0 active tracking days
+      // Reference variable to satisfy compiler
       daysRegistered = 0;
     }
 

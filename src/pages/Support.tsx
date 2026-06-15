@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { BookOpen, Sparkles, Zap, MessageSquare, Hourglass, PiggyBank, Target, Receipt } from 'lucide-react';
+import { BookOpen, Sparkles, MessageSquare, Hourglass, PiggyBank, Target, Receipt } from 'lucide-react';
 
 interface SupportProps {
   darkMode?: boolean;
@@ -47,7 +47,7 @@ export const Support: React.FC<SupportProps> = ({ darkMode = true }) => {
               <div className="w-9 h-9 rounded-xl bg-teal-500/10 text-teal-400 flex items-center justify-center mb-4">
                 <Receipt size={18} />
               </div>
-              <h4 className="text-sm font-bold text-slate-255 m-0">1. Expense & Inflow Tracking</h4>
+              <h4 className="text-sm font-bold text-slate-255 m-0">1. Expense Tracking</h4>
               <p className="text-[11px] text-slate-400 mt-2 leading-relaxed font-medium">
                 Keep a flawless record of where your money goes. Go to the Expenses page to add transactions manually or upload visual receipt scans for automatic OCR extraction.
               </p>
@@ -95,30 +95,8 @@ export const Support: React.FC<SupportProps> = ({ darkMode = true }) => {
         </div>
       </div>
 
-      {/* Section 2: Logging Inflows (Pocket Money / Incomes) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        {/* Inflow Guide Card */}
-        <div className={`p-6 rounded-2xl border relative overflow-hidden transition-all duration-300 hover:scale-[1.01] hover:border-teal-500/30 ${
-          darkMode ? 'glass-panel-dark border-slate-800' : 'glass-panel-light border-slate-200'
-        }`}>
-          <div className="w-10 h-10 rounded-xl bg-teal-500/10 text-teal-400 flex items-center justify-center mb-4">
-            <Zap size={20} />
-          </div>
-          <h3 className="text-lg font-bold font-display m-0 text-slate-200">How to Log Unexpected Inflows</h3>
-          <p className="text-xs text-slate-400 mt-2 leading-relaxed font-medium">
-            Keep track of side income, cash gifts, or pocket allowance from parents easily:
-          </p>
-          <ul className="text-xs text-slate-350 space-y-2 pl-4 list-disc font-semibold mt-3">
-            <li>Go to the <span className="text-teal-400">Expenses</span> page.</li>
-            <li>Click on <span className="text-teal-400">Add Expense</span>.</li>
-            <li>In the Category dropdown, select <span className="text-teal-400">Unexpected Inflow</span>.</li>
-            <li>The form will instantly simplify to only collect the Amount, Date, and Source Description!</li>
-          </ul>
-          <span className="text-[10px] text-teal-400 font-bold block mt-4 bg-teal-500/10 px-2.5 py-1 rounded-lg w-max">
-            💡 Added directly to your Monthly Inflow!
-          </span>
-        </div>
+      {/* Section 2: Best Practices for Strategic Coaching */}
+      <div className="grid grid-cols-1 gap-6">
 
         {/* Getting Best Experience Card */}
         <div className={`p-6 rounded-2xl border relative overflow-hidden transition-all duration-300 hover:scale-[1.01] hover:border-cyan-500/30 ${
@@ -131,7 +109,7 @@ export const Support: React.FC<SupportProps> = ({ darkMode = true }) => {
           <p className="text-xs text-slate-400 mt-2 leading-relaxed font-medium">
             Follow these essential guidelines to let Atom give you hyper-personalized strategic coaching:
           </p>
-          <ul className="text-xs text-slate-350 space-y-2 pl-4 list-disc font-semibold mt-3">
+          <ul className="text-xs text-slate-350 space-y-2.5 pl-4 list-disc font-semibold mt-3">
             <li><span className="text-cyan-400">Add daily expenses</span>: Consistency ensures accurate habit and weakness tracking.</li>
             <li><span className="text-cyan-400">Track for 21 Active Days</span>: The AI needs 21 calendar days of expense data to construct your Spending Personality.</li>
             <li><span className="text-cyan-400">Define realistic goals</span>: Set milestones in Settings to guide your savings advisor.</li>
