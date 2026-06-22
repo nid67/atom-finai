@@ -12,7 +12,10 @@ import {
   X, 
   Camera, 
   Check, 
-  Sparkles
+  Sparkles,
+  Download,
+  FileSpreadsheet,
+  FileText
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -30,6 +33,10 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [quickFilter, setQuickFilter] = useState('All');
+  const [isExportOpen, setIsExportOpen] = useState(false);
 
   // Form States (Manual Add / Edit)
   const [amount, setAmount] = useState('');
@@ -126,6 +133,261 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
   };
   */
 
+  const handleQuickFilterChange = (filter: string) => {
+    setQuickFilter(filter);
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    if (filter === 'All') {
+      setStartDate('');
+      setEndDate('');
+    } else if (filter === 'This Month') {
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      const offset = firstDay.getTimezoneOffset();
+      const localFirstDay = new Date(firstDay.getTime() - (offset * 60 * 1000));
+      setStartDate(localFirstDay.toISOString().split('T')[0]);
+      setEndDate(todayStr);
+    } else if (filter === 'Last 30 Days') {
+      const past30 = new Date();
+      past30.setDate(today.getDate() - 30);
+      const offset = past30.getTimezoneOffset();
+      const localPast30 = new Date(past30.getTime() - (offset * 60 * 1000));
+      setStartDate(localPast30.toISOString().split('T')[0]);
+      setEndDate(todayStr);
+    } else if (filter === 'Last 90 Days') {
+      const past90 = new Date();
+      past90.setDate(today.getDate() - 90);
+      const offset = past90.getTimezoneOffset();
+      const localPast90 = new Date(past90.getTime() - (offset * 60 * 1000));
+      setStartDate(localPast90.toISOString().split('T')[0]);
+      setEndDate(todayStr);
+    } else if (filter === 'This Year') {
+      const firstDayOfYear = new Date(today.getFullYear(), 0, 1);
+      const offset = firstDayOfYear.getTimezoneOffset();
+      const localFirstDay = new Date(firstDayOfYear.getTime() - (offset * 60 * 1000));
+      setStartDate(localFirstDay.toISOString().split('T')[0]);
+      setEndDate(todayStr);
+    }
+  };
+
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setStartDate(e.target.value);
+    setQuickFilter('Custom');
+  };
+
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEndDate(e.target.value);
+    setQuickFilter('Custom');
+  };
+
+  const handleExportCSV = () => {
+    const headers = ['Date', 'Merchant', 'Category', `Amount (${currency})`, 'Payment Method', 'Source', 'Description', 'Expense ID'];
+    const sortedFiltered = [...filteredExpenses].sort((a, b) => b.date.localeCompare(a.date));
+    const rows = sortedFiltered.map(e => [
+      e.date,
+      `"${e.merchantName.replace(/"/g, '""')}"`,
+      `"${e.category.replace(/"/g, '""')}"`,
+      e.amount.toFixed(2),
+      `"${e.paymentMethod.replace(/"/g, '""')}"`,
+      `"${e.sourceType.replace(/"/g, '""')}"`,
+      `"${e.description.replace(/"/g, '""')}"`,
+      `"${e.expenseId}"`
+    ]);
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `atom_expenses_${startDate || 'all'}_to_${endDate || 'all'}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportPDF = () => {
+    import('jspdf').then(({ jsPDF }) => {
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const todayStr = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      const items = [...filteredExpenses].sort((a, b) => b.date.localeCompare(a.date));
+      const totalSpent = items.reduce((sum, e) => sum + e.amount, 0);
+
+      // Title & Header bar
+      doc.setFillColor(15, 23, 42); // slate-900 color
+      doc.rect(0, 0, 210, 35, 'F');
+
+      // Title Text
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.text("Atom FinAI", 15, 18);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(148, 163, 184); // slate-400
+      doc.text("Personal Expense Statement", 15, 25);
+      doc.text(`Generated on: ${todayStr}`, 15, 30);
+
+      // Add a cool accent stripe
+      doc.setFillColor(20, 184, 166); // teal-500
+      doc.rect(0, 35, 210, 2, 'F');
+
+      // Metadata section
+      doc.setTextColor(15, 23, 42); // slate-900
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text("Statement Summary", 15, 47);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(71, 85, 105); // slate-600
+
+      const rangeText = startDate || endDate
+        ? `${startDate || 'Start'} to ${endDate || 'End'}`
+        : "All Time";
+      doc.text(`Date Range: ${rangeText}`, 15, 53);
+      doc.text(`Transactions Count: ${items.length}`, 15, 58);
+
+      // Total Spent Banner Box
+      doc.setFillColor(241, 245, 249); // slate-100
+      doc.roundedRect(130, 42, 65, 18, 2, 2, 'F');
+      
+      doc.setTextColor(71, 85, 105);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.text("TOTAL SPENT", 135, 48);
+
+      doc.setTextColor(20, 110, 120); // Deep teal
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text(`${currency}${totalSpent.toFixed(2)}`, 135, 55);
+
+      // Table Header setup
+      const startX = 15;
+      const colWidths = {
+        date: 22,
+        merchant: 35,
+        category: 30,
+        payment: 20,
+        source: 15,
+        description: 36,
+        amount: 22
+      };
+
+      const tableHeaderY = 68;
+      
+      // Draw Table Header Background
+      doc.setFillColor(30, 41, 59); // slate-800
+      doc.rect(startX, tableHeaderY, 180, 8, 'F');
+
+      // Table Header text
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      
+      doc.text("Date", startX + 2, tableHeaderY + 5.5);
+      doc.text("Merchant", startX + colWidths.date + 2, tableHeaderY + 5.5);
+      doc.text("Category", startX + colWidths.date + colWidths.merchant + 2, tableHeaderY + 5.5);
+      doc.text("Payment", startX + colWidths.date + colWidths.merchant + colWidths.category + 2, tableHeaderY + 5.5);
+      doc.text("Source", startX + colWidths.date + colWidths.merchant + colWidths.category + colWidths.payment + 2, tableHeaderY + 5.5);
+      doc.text("Description", startX + colWidths.date + colWidths.merchant + colWidths.category + colWidths.payment + colWidths.source + 2, tableHeaderY + 5.5);
+      doc.text("Amount", startX + 180 - 2, tableHeaderY + 5.5, { align: 'right' });
+
+      // Rows
+      let currentY = tableHeaderY + 8;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+
+      items.forEach((exp, idx) => {
+        // Page break logic
+        if (currentY > 270) {
+          doc.addPage();
+          doc.setFillColor(15, 23, 42); // slate-900
+          doc.rect(0, 0, 210, 15, 'F');
+          
+          doc.setTextColor(255, 255, 255);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(10);
+          doc.text("Atom FinAI - Expense Statement (Continued)", 15, 10);
+          
+          currentY = 20;
+          doc.setFillColor(30, 41, 59); // slate-800
+          doc.rect(startX, currentY, 180, 8, 'F');
+          
+          doc.setTextColor(255, 255, 255);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8.5);
+          doc.text("Date", startX + 2, currentY + 5.5);
+          doc.text("Merchant", startX + colWidths.date + 2, currentY + 5.5);
+          doc.text("Category", startX + colWidths.date + colWidths.merchant + 2, currentY + 5.5);
+          doc.text("Payment", startX + colWidths.date + colWidths.merchant + colWidths.category + 2, currentY + 5.5);
+          doc.text("Source", startX + colWidths.date + colWidths.merchant + colWidths.category + colWidths.payment + 2, currentY + 5.5);
+          doc.text("Description", startX + colWidths.date + colWidths.merchant + colWidths.category + colWidths.payment + colWidths.source + 2, currentY + 5.5);
+          doc.text("Amount", startX + 180 - 2, currentY + 5.5, { align: 'right' });
+          
+          currentY += 8;
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8);
+        }
+
+        // Alternating row background
+        if (idx % 2 === 1) {
+          doc.setFillColor(248, 250, 252); // slate-50
+          doc.rect(startX, currentY, 180, 7.5, 'F');
+        } else {
+          doc.setFillColor(255, 255, 255);
+          doc.rect(startX, currentY, 180, 7.5, 'F');
+        }
+
+        // Row borders
+        doc.setDrawColor(241, 245, 249); // slate-100
+        doc.line(startX, currentY + 7.5, startX + 180, currentY + 7.5);
+
+        // Values
+        doc.setTextColor(71, 85, 105); // slate-600
+        
+        doc.text(exp.date, startX + 2, currentY + 5);
+        
+        const merch = exp.merchantName.length > 20 ? exp.merchantName.slice(0, 18) + '..' : exp.merchantName;
+        doc.setTextColor(15, 23, 42); // slate-900 for key text
+        doc.text(merch, startX + colWidths.date + 2, currentY + 5);
+        
+        doc.setTextColor(71, 85, 105);
+        doc.text(exp.category, startX + colWidths.date + colWidths.merchant + 2, currentY + 5);
+        doc.text(exp.paymentMethod, startX + colWidths.date + colWidths.merchant + colWidths.category + 2, currentY + 5);
+        
+        const src = exp.sourceType.charAt(0).toUpperCase() + exp.sourceType.slice(1);
+        doc.text(src, startX + colWidths.date + colWidths.merchant + colWidths.category + colWidths.payment + 2, currentY + 5);
+        
+        const desc = exp.description.length > 22 ? exp.description.slice(0, 20) + '..' : exp.description;
+        doc.text(desc, startX + colWidths.date + colWidths.merchant + colWidths.category + colWidths.payment + colWidths.source + 2, currentY + 5);
+        
+        doc.setTextColor(15, 23, 42);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${currency}${exp.amount.toFixed(2)}`, startX + 180 - 2, currentY + 5, { align: 'right' });
+        doc.setFont('helvetica', 'normal');
+
+        currentY += 7.5;
+      });
+
+      doc.save(`atom_expenses_${startDate || 'all'}_to_${endDate || 'all'}.pdf`);
+    }).catch(err => {
+      console.error("jsPDF loading failed:", err);
+      alert("Failed to load PDF export engine. Please try again.");
+    });
+  };
+
   // Submit Manual Expense
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,7 +455,9 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
       e.merchantName.toLowerCase().includes(search.toLowerCase()) || 
       e.description.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = categoryFilter === '' || e.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+    const matchesStartDate = !startDate || e.date >= startDate;
+    const matchesEndDate = !endDate || e.date <= endDate;
+    return matchesSearch && matchesCategory && matchesStartDate && matchesEndDate;
   });
 
   // Helper to format date header nicely
@@ -288,40 +552,156 @@ export const Expenses: React.FC<ExpensesProps> = ({ darkMode = true }) => {
             <Plus size={14} />
             <span>Add Expense</span>
           </button>
+
+          {/* Export Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setIsExportOpen(!isExportOpen)}
+              className={`flex items-center gap-2 px-4 py-2.5 border text-xs font-bold rounded-xl transition-all hover:scale-105 cursor-pointer ${
+                darkMode
+                  ? 'bg-slate-900 border-slate-800 text-slate-300 hover:text-slate-100 hover:bg-slate-800'
+                  : 'bg-white border-slate-200 text-slate-600 hover:text-slate-800 hover:bg-slate-50'
+              }`}
+            >
+              <Download size={14} />
+              <span>Export</span>
+            </button>
+            {isExportOpen && (
+              <div className={`absolute right-0 mt-2 w-40 rounded-xl border shadow-xl z-20 overflow-hidden ${
+                darkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
+              }`}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleExportCSV();
+                    setIsExportOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 text-xs font-bold flex items-center gap-2 hover:bg-teal-500/10 transition-colors cursor-pointer ${
+                    darkMode ? 'text-slate-300 hover:text-teal-400' : 'text-slate-600 hover:text-teal-650'
+                  }`}
+                >
+                  <FileSpreadsheet size={13} className="text-teal-400" />
+                  <span>Export to CSV</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleExportPDF();
+                    setIsExportOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 text-xs font-bold flex items-center gap-2 hover:bg-teal-500/10 transition-colors cursor-pointer ${
+                    darkMode ? 'text-slate-300 hover:text-teal-400' : 'text-slate-600 hover:text-teal-650'
+                  }`}
+                >
+                  <FileText size={13} className="text-teal-400" />
+                  <span>Export to PDF</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className={`p-4 rounded-xl border flex flex-col md:flex-row gap-4 items-center ${
+      <div className={`p-4 rounded-xl border flex flex-col gap-4 ${
         darkMode ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'
       }`}>
-        <div className="flex-1 w-full relative">
-          <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-500" />
-          <input
-            type="text"
-            placeholder="Search by merchant name or description..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-xs focus:outline-none focus:ring-1 focus:ring-teal-500 ${
-              darkMode ? 'bg-slate-950/40 border-slate-800 text-slate-200 placeholder-slate-600' : 'bg-white border-slate-200'
-            }`}
-          />
+        <div className="flex flex-col md:flex-row gap-4 items-center w-full">
+          <div className="flex-1 w-full relative">
+            <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-500" />
+            <input
+              type="text"
+              placeholder="Search by merchant name or description..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-xs focus:outline-none focus:ring-1 focus:ring-teal-500 ${
+                darkMode ? 'bg-slate-950/40 border-slate-800 text-slate-200 placeholder-slate-600' : 'bg-white border-slate-200'
+              }`}
+            />
+          </div>
+
+          <div className="w-full md:w-56 flex items-center gap-2 relative">
+            <Filter className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-500" />
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-xs focus:outline-none ${
+                darkMode ? 'bg-slate-950/40 border-slate-800 text-slate-200' : 'bg-white border-slate-200'
+              }`}
+            >
+              <option value="">All Categories</option>
+              {categories.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        <div className="w-full md:w-56 flex items-center gap-2 relative">
-          <Filter className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-500" />
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-xs focus:outline-none ${
-              darkMode ? 'bg-slate-950/40 border-slate-800 text-slate-200' : 'bg-white border-slate-200'
-            }`}
-          >
-            <option value="">All Categories</option>
-            {categories.map(c => (
-              <option key={c} value={c}>{c}</option>
+        {/* Date Range & Quick Filters Row */}
+        <div className={`flex flex-col md:flex-row gap-4 justify-between items-center w-full border-t pt-4 ${
+          darkMode ? 'border-slate-800/40' : 'border-slate-200'
+        }`}>
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            <span className="text-slate-400 text-xs font-bold mr-2">Range:</span>
+            {['All', 'This Month', 'Last 30 Days', 'Last 90 Days', 'This Year'].map(opt => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => handleQuickFilterChange(opt)}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                  quickFilter === opt
+                    ? 'bg-teal-500/20 text-teal-400 border border-teal-500/40'
+                    : darkMode
+                      ? 'bg-slate-950/40 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/25'
+                      : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-800 hover:bg-slate-100'
+                }`}
+              >
+                {opt}
+              </button>
             ))}
-          </select>
+          </div>
+
+          <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={startDate}
+                onChange={handleStartDateChange}
+                placeholder="Start Date"
+                style={{ colorScheme: darkMode ? 'dark' : 'light' }}
+                className={`px-3 py-2 rounded-xl border text-[11px] font-bold focus:outline-none ${
+                  darkMode ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-700'
+                }`}
+              />
+              <span className="text-slate-500 text-xs">-</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={handleEndDateChange}
+                placeholder="End Date"
+                style={{ colorScheme: darkMode ? 'dark' : 'light' }}
+                className={`px-3 py-2 rounded-xl border text-[11px] font-bold focus:outline-none ${
+                  darkMode ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-700'
+                }`}
+              />
+            </div>
+            {(startDate || endDate) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setStartDate('');
+                  setEndDate('');
+                  setQuickFilter('All');
+                }}
+                className={`p-2 rounded-xl border transition-colors cursor-pointer ${
+                  darkMode ? 'border-slate-800 text-slate-400 hover:bg-slate-800/30' : 'border-slate-200 text-slate-500 hover:bg-slate-100'
+                }`}
+                title="Reset dates"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
